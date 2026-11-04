@@ -1,6 +1,7 @@
 "use client";
 
 import { audio } from "./audio";
+import { isAudioSilenced } from "./audio";
 
 /**
  * Original chiptune sequencer — every note in WOW GAMES is composed in this file.
@@ -135,6 +136,8 @@ class Sequencer {
   }
 
   start(id: PatternId): void {
+    // hover previews run in a silence scope — never start a loop for them
+    if (isAudioSilenced()) return;
     const ctx = audio.ensure();
     const out = audio.musicOutput;
     if (!ctx || !out) return;

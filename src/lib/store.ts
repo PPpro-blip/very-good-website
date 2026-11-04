@@ -20,6 +20,8 @@ export interface PlayEntry {
 export interface WowState {
   version: 1;
   nickname: string;
+  /** emoji avatar id — purely cosmetic, stored on this device */
+  avatar: string;
   favorites: string[];
   recent: PlayEntry[];
   plays: Record<string, number>;
@@ -36,6 +38,7 @@ export interface WowState {
 export const DEFAULT_STATE: WowState = {
   version: 1,
   nickname: "",
+  avatar: "🕹️",
   favorites: [],
   recent: [],
   plays: {},
@@ -133,6 +136,10 @@ export const store = {
   patch(patch: Partial<WowState>) {
     setState(patch);
   },
+  setAvatar(avatar: string) {
+    setState({ avatar });
+  },
+
   setNickname(nickname: string) {
     setState({ nickname: nickname.trim().slice(0, 18), onboarded: true });
   },

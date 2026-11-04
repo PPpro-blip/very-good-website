@@ -12,6 +12,8 @@ import { useLockBodyScroll } from "@/lib/hooks";
 import { store, useWowStore } from "@/lib/store";
 import { cn, timeAgo } from "@/lib/utils";
 
+const AVATARS = ["🕹️", "👾", "🚀", "🦊", "🐉", "⚡", "🎯", "🌌"];
+
 function Toggle({
   label,
   hint,
@@ -110,7 +112,9 @@ export function ProfilePanel() {
               style={{ background: "linear-gradient(135deg,#2ee6ff,#8b5cf6 58%,#ff3fd8)" }}
               aria-hidden
             >
-              {playerLabel.slice(0, 1).toUpperCase()}
+              <span className="text-2xl leading-none" aria-hidden>
+                {state.avatar || "🕹️"}
+              </span>
             </span>
             <div>
               <p className="font-display text-base font-black uppercase tracking-[0.1em] text-white">
@@ -127,6 +131,35 @@ export function ProfilePanel() {
         </div>
 
         <div className="overflow-y-auto px-5 py-5">
+          {/* avatar picker */}
+          <div className="mb-4">
+            <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-white/40">
+              Pick your avatar
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Choose avatar">
+              {AVATARS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  aria-pressed={state.avatar === emoji}
+                  aria-label={`Avatar ${emoji}`}
+                  onClick={() => {
+                    store.setAvatar(emoji);
+                    audio.sfx("click");
+                  }}
+                  className={cn(
+                    "grid h-10 w-10 place-items-center rounded-xl border text-lg transition",
+                    state.avatar === emoji
+                      ? "border-arc-cyan/60 bg-arc-cyan/15 shadow-[0_0_18px_-6px_rgba(46,230,255,0.9)]"
+                      : "border-white/10 bg-white/[0.03] hover:border-white/30",
+                  )}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* stats */}
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {[

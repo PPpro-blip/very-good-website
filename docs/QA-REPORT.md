@@ -8,6 +8,41 @@ importantly — what could **not** be verified in this environment.
 
 ---
 
+## 0a. WOW GAMES 2.0 upgrade (2026-11-04)
+
+### Shipped
+
+| Area | What changed |
+| --- | --- |
+| Cinematic previews | New `GamePreview`: real engine attract mode for Geometry Rush / Flappy Chaos, animated poster fallback, reserved lazy `preview.video` slot (muted/loop/playsInline, 220 ms hover arming), reduced-motion + touch safe |
+| Attract engines | `attract?: boolean` added to both engines with a self-playing pilot, looped deaths/restarts, faster respawn; silence scopes in `audio`/`music` so previews never make sound |
+| Game cards | Live/animated preview inside the tilt+parallax cabinet, NEW badge, Featured ribbon, artwork label ("live gameplay" / "gameplay" / "artwork") |
+| Featured carousel | Hover shows the slide's real gameplay, per-game glow, NEW + multiplayer chips, "Explore <category>" secondary CTA, hover hint line |
+| FPS-GODS | New 12th cabinet (`fps` motif artwork, tactical palette), dedicated home `FpsZone` with dossier panel, player page banner, hero shortcut, official `fps-gods.vercel.app` link (4× reachable) |
+| Discovery | 7 draggable, snapping, arrow-controlled shelves with per-shelf accents; "Most played" uses the visitor's real launch counts, honestly labelled |
+| Player page | Cinematic banner behind the title, NEW badge, existing poster-first embed flow preserved |
+| Profile | 8 emoji avatars persisted in `localStorage` alongside the nickname and stats |
+| Layout | Removed the two duplicate home grids (originals + vault) now covered by shelves — cut the home HTML from 845 KB to 658 KB raw (106 KB gzip) |
+
+### Verified automatically
+
+- `npm run typecheck` — clean.
+- `npm run build` — **23 routes** exported (12 cabinets), no warnings.
+- `npm run verify` — content, level geometry, both engine simulators, preview engines and the export suite all pass.
+  - `verify-content`: FPS-GODS URL is exactly `https://fps-gods.vercel.app/`, multiplayer category, `fps` motif; only original builds carry live previews; at most 3 cabinets marked NEW; preview videos must live under `/previews/`.
+  - `verify-previews`: Geometry Rush attract reaches **7,040 px with 0 deaths in 20 s**; Flappy Chaos attract scores **10 pipes in 20 s**; the audio silence scope engages and releases.
+  - `verify-export`: 12 player pages, hosted pages export **no iframe**, `/games` lists all 12 cabinets.
+- Served the static export and checked: home contains the FPS zone, all seven shelf headings and the FPS URL; `/play/fps-gods/` has its title, `OPEN FPS-GODS`, the inline opt-in, four links to the official URL and no iframe; `/games` lists FPS-GODS.
+
+### Still not verifiable here (no browser)
+
+Hover feel, engine previews actually rendering on screen, shelf dragging on touch,
+autoplay policy for video previews, and whether `fps-gods.vercel.app` permits framing
+(its headers, like arena.site's, cannot be reached from this sandbox). The player's
+poster-first fallback covers that last one.
+
+---
+
 ## 0. Hosted-cabinet embedding fix (2026-11-04)
 
 **Reported:** `/play/arena-game/` showed a blank grey panel with a broken-page icon

@@ -8,6 +8,8 @@ import { GameCard } from "@/components/games/GameCard";
 import { Hero } from "@/components/games/Hero";
 import { Marquee } from "@/components/shell/Marquee";
 import { ContinueRow } from "@/components/home/ContinueRow";
+import { DiscoveryShelves } from "@/components/home/DiscoveryShelves";
+import { FpsZone } from "@/components/home/FpsZone";
 import { FinalCTA, HomeStats } from "@/components/home/HomeWidgets";
 import { EXTERNAL_GAMES, GAMES, ORIGINAL_GAMES, PLAY_ROUTE } from "@/data/games";
 import { STUDY_TOPICS } from "@/data/study-topics";
@@ -69,55 +71,11 @@ export default function HomePage() {
         </Reveal>
       </div>
 
+      <FpsZone />
+
       <ContinueRow />
 
-      {/* ---------------- originals ---------------- */}
-      <section className="shell mt-20" aria-labelledby="originals-title">
-        <Reveal>
-          <SectionHead
-            kicker="Original builds · written in this repo"
-            accent="#4af2a1"
-            title={
-              <span id="originals-title">
-                Not links.
-                <br />
-                Actual games.
-              </span>
-            }
-            copy="Geometry Rush, Flappy Chaos and Brain Blast are built from scratch with canvas, physics, Web Audio and a lot of tuning. Each one has real collision, real scoring and a restart button that gets used."
-            action={{ href: "/custom", label: "Original hub" }}
-          />
-        </Reveal>
-
-        <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {ORIGINAL_GAMES.map((game, i) => (
-            <Reveal key={game.slug} delay={i * 90}>
-              <GameCard game={game} />
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* ---------------- external vault ---------------- */}
-      <section className="shell mt-20" aria-labelledby="vault-title">
-        <Reveal>
-          <SectionHead
-            kicker="The vault · hosted builds"
-            accent="#ff8a3d"
-            title={<span id="vault-title">Seven more cabinets</span>}
-            copy="Original games hosted on Arena, CodeLab and GitHub Pages. WOW GAMES wraps each one in a proper player, with fullscreen, a loading state and an always-available direct link in case the host blocks embedding."
-            action={{ href: "/games", label: "Browse library" }}
-          />
-        </Reveal>
-
-        <div className="mt-7 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {EXTERNAL_GAMES.map((game, i) => (
-            <Reveal key={game.slug} delay={i * 60}>
-              <GameCard game={game} />
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      <DiscoveryShelves />
 
       {/* ---------------- study zone ---------------- */}
       <section className="shell mt-20" aria-labelledby="study-title">

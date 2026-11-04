@@ -105,7 +105,24 @@ export function PlayerClient({ slug }: { slug: string }) {
 
   return (
     <div className="shell py-5 md:py-8">
-      {/* breadcrumb + title */}
+      {/* cinematic cabinet banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/10">
+        <div className="pointer-events-none absolute inset-0 opacity-50" aria-hidden>
+          <GameArt game={game} />
+        </div>
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden
+          style={{
+            background:
+              "linear-gradient(90deg, #05060f 6%, rgba(5,6,15,0.9) 46%, rgba(5,6,15,0.25) 100%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#05060f] to-transparent"
+          aria-hidden
+        />
+        <div className="relative px-4 py-5 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/games"
@@ -137,6 +154,11 @@ export function PlayerClient({ slug }: { slug: string }) {
                 {game.badge}
               </span>
             ) : null}
+            {game.isNew ? (
+              <span className="badge-new rounded-full px-2 py-1 font-mono text-[8px] font-black uppercase tracking-[0.16em]">
+                New
+              </span>
+            ) : null}
             {game.categories.slice(0, 2).map((cat) => (
               <span key={cat} className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/35">
                 {CATEGORY_LABEL[cat]}
@@ -156,6 +178,8 @@ export function PlayerClient({ slug }: { slug: string }) {
             <p className="font-display text-xl font-black leading-none text-arc-yellow">{bestLabel}</p>
           </div>
         ) : null}
+      </div>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]">

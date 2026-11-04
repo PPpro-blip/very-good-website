@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Difficulty, KindBadge } from "@/components/ui/Bits";
 import { GameArt } from "@/components/games/GameArt";
+import { GamePreview } from "@/components/games/GamePreview";
 import { FEATURED_GAMES, PLAY_ROUTE } from "@/data/games";
 import { CATEGORY_LABEL } from "@/data/categories";
 import { audio } from "@/lib/audio";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 export function FeaturedRail() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const motion = useMotionEnabled();
   const artRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -70,8 +72,16 @@ export function FeaturedRail() {
       <div
         ref={panelRef}
         onPointerMove={handlePointer}
-        className="relative overflow-hidden rounded-[30px] border border-white/12 shadow-[0_40px_120px_-60px_#000]"
-        style={{ "--g1": active.palette.from, "--g2": active.palette.to } as React.CSSProperties}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        className="relative overflow-hidden rounded-[30px] border border-white/12 shadow-[0_40px_120px_-60px_#000] transition-shadow duration-500"
+        style={
+          {
+            "--g1": active.palette.from,
+            "--g2": active.palette.to,
+            boxShadow: `0 40px 120px -70px ${active.palette.from}, 0 0 0 1px ${active.palette.from}22`,
+          } as React.CSSProperties
+        }
       >
         {/* artwork layer */}
         <div className="absolute inset-0" aria-hidden>
@@ -80,7 +90,7 @@ export function FeaturedRail() {
             key={active.slug}
             className="absolute inset-[-4%] animate-[rise_0.7s_ease-out_both] transition-transform duration-500 ease-out"
           >
-            <GameArt game={active} className="h-full w-full" />
+            <GamePreview game={active} active={hovered} showBadge={false} />
           </div>
           <div className="absolute inset-0 bg-gradient-to-r from-[#04060f] via-[#04060f]/85 to-[#04060f]/20" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#04060f] via-transparent to-[#04060f]/50" />
@@ -99,6 +109,16 @@ export function FeaturedRail() {
                 <Icon name="star" size={10} /> Featured
               </span>
               <KindBadge game={active} />
+              {active.isNew ? (
+                <span className="badge-new rounded-full px-2 py-1 font-mono text-[8px] font-black uppercase tracking-[0.16em]">
+                  New
+                </span>
+              ) : null}
+              {active.categories.includes("multiplayer") ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-arc-blue/40 bg-arc-blue/10 px-2 py-1 font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-arc-cyan">
+                  <Icon name="flame" size={9} /> {active.players}
+                </span>
+              ) : null}
               <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/40">
                 {String(index + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
               </span>
@@ -135,10 +155,23 @@ export function FeaturedRail() {
               >
                 <Icon name="play" size={14} /> <span>Play {active.title}</span>
               </Link>
-              <Link href="/games" className="btn btn-ghost">
-                All games
+              <Link
+                href={`/games?category=${active.categories[0]}`}
+                onClick={() => audio.sfx("click")}
+                className="btn btn-ghost"
+              >
+                Explore {CATEGORY_LABEL[active.categories[0]]}
               </Link>
             </div>
+
+            <p className="mt-4 flex items-center gap-1.5 font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/30">
+              <Icon name={active.preview?.live ? "gamepad" : "external"} size={10} />
+              {active.preview?.live
+                ? "Hover the artwork for real in-engine gameplay"
+                : active.kind === "external"
+                  ? `Hosted on ${new URL(active.url ?? "https://wow.games").hostname.replace(/^www\./, "")}`
+                  : "Procedural artwork · original build"}
+            </p>
           </div>
 
           {/* thumbnail switcher */}

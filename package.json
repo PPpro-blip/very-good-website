@@ -10,8 +10,9 @@
     "typecheck": "tsc --noEmit",
     "verify:content": "tsx scripts/verify-content.ts",
     "verify:games": "tsx scripts/simulate-geometry.ts && tsx scripts/simulate-flappy.ts",
-    "verify": "tsc --noEmit && tsx scripts/verify-content.ts && tsx scripts/simulate-geometry.ts && tsx scripts/simulate-flappy.ts && tsx scripts/verify-export.ts",
-    "verify:export": "tsx scripts/verify-export.ts"
+    "verify": "tsc --noEmit && tsx scripts/verify-content.ts && tsx scripts/simulate-geometry.ts && tsx scripts/simulate-flappy.ts && tsx scripts/verify-previews.ts && tsx scripts/verify-export.ts",
+    "verify:export": "tsx scripts/verify-export.ts",
+    "verify:previews": "tsx scripts/verify-previews.ts"
   },
   "dependencies": {
     "@fontsource/orbitron": "5.3.0",

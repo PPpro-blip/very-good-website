@@ -46,11 +46,55 @@ The original URLs are never rewritten or proxied. See [§7 Hosted games](#7-host
 
 ---
 
+## 1b. WOW GAMES 2.0 — cinematic layer
+
+**Cards that play themselves.** Hovering a cabinet card (or the featured showcase)
+fades the poster into a preview:
+
+- **Original builds** run the *real engine* in attract mode on a tiny canvas —
+  identical physics, art and level data, self-playing, muted, destroyed the moment
+  the pointer leaves (`src/games/previews/LiveAttract.tsx`).
+- **Hosted builds** have no footage we can honestly show, so they get their own
+  animated artwork plus a reserved `preview.video` slot. Nothing is faked with stock
+  clips.
+- Video previews, when provided, are muted, looped, `playsInline`, `preload="none"`
+  and only mounted after a 220 ms hover (so fast mouse sweeps never start downloads).
+- Reduced-motion and touch visitors get the still poster — no autoplay, no hover
+  dependency.
+
+### Adding real gameplay footage
+
+1. Record 4–10 s, 720p, muted (no audio track at all), 24–30 fps.
+2. Encode: `ffmpeg -i clip.mp4 -an -vf scale=960:-2 -c:v libvpx-vp9 -crf 34 -b:v 0 public/previews/<slug>.webm`
+   (keep an `.mp4` fallback if you need Safari < 16).
+3. Drop a poster frame at `public/previews/<slug>.jpg`.
+4. Point the game at it in `src/data/games.ts`:
+
+   ```ts
+   preview: { video: "/previews/geometry-rush.webm", poster: "/previews/geometry-rush.jpg" }
+   ```
+
+The card does the rest: lazy mount, fade-in, pause and reset on leave, and it keeps
+the animated poster as the pre-load frame. Live engine previews take priority only
+when no video is configured.
+
+**FPS-GODS** is the multiplayer flagship: its own tactical identity, a dedicated
+home section (`FpsZone`), a full player page and a one-click official launch. WOW
+GAMES never re-implements it — sign-in and matchmaking stay inside
+`fps-gods.vercel.app`.
+
+**Discovery shelves** (`src/components/games/GameShelf.tsx`) are draggable, snapping,
+arrow-controlled rails with seven distinct sections — trending, recent, most played
+(from your own launch counts), originals, multiplayer, brain games and sensory.
+
+**Profile**: nickname + emoji avatar (8 choices), launch counts, favourites, best
+scores and achievements — all device-local, never presented as an online account.
+
 ## 2. Site map
 
 | Route | What lives there |
 | --- | --- |
-| `/` | Hero, animated headline, PLAY NOW, featured carousel, continue-playing row, live arcade stats, category tiles, study + sensory teasers |
+| `/` | Hero (with FPS-GODS shortcut), cinematic featured carousel, FPS-GODS zone, continue-playing row, seven discovery shelves, live arcade stats, category tiles, study + sensory teasers |
 | `/games` | Full library: search, category chips, sort, favourites-only, recently-played-only, surprise-me, result count, empty states |
 | `/categories` | Ten aisles, each with its own accent colour and deep link into `/games?category=…` |
 | `/custom` | The "bring your own cabinet" page: how new games are registered, what the player shell gives you |
@@ -251,6 +295,9 @@ npm run verify
 - `simulate-flappy` — a synthetic pilot sweeps control parameters against the real
   engine to prove the difficulty ramp stays clearable (passes at 25+ pipes; the best
   pilot typically clears 45–80).
+- `verify-previews` — plays both attract-mode preview engines for 20 simulated
+  seconds and requires clean self-play (Geometry Rush ≥ 4,200 px with zero deaths,
+  Flappy ≥ 3 pipes), so a hover preview can never show a stuck or dying game.
 - `verify-export` — reads the built `out/` folder and asserts the player contract:
   hosted cabinets ship **no iframe in the export** (poster only), keep the exact
   original URL, expose the inline opt-in and the OPEN button; original games render no

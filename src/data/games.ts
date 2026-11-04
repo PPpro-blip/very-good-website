@@ -30,9 +30,29 @@ export type MotifId =
   | "runner"
   | "wing"
   | "brain"
-  | "aurora";
+  | "aurora"
+  | "fps";
 
 export type GameKind = "original" | "external";
+
+/**
+ * Cinematic preview support.
+ *
+ * `video` is the slot for real gameplay footage (4–10s, muted, looped, no audio
+ * track). Drop a compressed .mp4/.webm into `public/previews/` and point to it
+ * here — the card will lazy-load and fade it in on hover. Until real footage
+ * exists we never substitute stock video: original games run their **actual
+ * engine** in attract mode (`live`) and everything else gets an animated poster.
+ * See README §7 "Cinematic previews" for the asset contract.
+ */
+export interface GamePreviewSpec {
+  /** real gameplay clip, e.g. "/previews/geometry-rush.webm" */
+  video?: string;
+  /** still frame shown before the clip plays */
+  poster?: string;
+  /** original builds: run the real engine attract-mode loop on a tiny canvas */
+  live?: "geometry-rush" | "flappy-chaos";
+}
 
 export interface Game {
   slug: string;
@@ -60,6 +80,10 @@ export interface Game {
   scoreLabel?: string;
   /** how likely the external host allows embedding — shown honestly in the UI */
   embedHint?: "likely" | "unknown";
+  /** cinematic hover preview (video / live engine / animated poster) */
+  preview?: GamePreviewSpec;
+  /** show a NEW badge only for cabinets added in the current release */
+  isNew?: boolean;
   year: number;
 }
 
@@ -225,6 +249,39 @@ export const GAMES: Game[] = [
     year: 2025,
   },
 
+  /* ---------- FPS-GODS: the multiplayer flagship ---------- */
+
+  {
+    slug: "fps-gods",
+    title: "FPS-GODS",
+    tagline: "Your arena. Your rules.",
+    description:
+      "Our own competitive multiplayer FPS: tactical arenas, fast duels and a scoring loop built for rivalries.",
+    about:
+      "FPS-GODS is the WOW GAMES competitive shooter — an independent multiplayer FPS built and hosted by our own team. It runs entirely on its own application: same accounts, same servers, same matchmaking. WOW GAMES is the launcher, never a re-implementation — so your loadouts, stats and multiplayer state are exactly what the official build gives you. Queue up, pick your arena and take the round.",
+    kind: "external",
+    url: "https://fps-gods.vercel.app/",
+    categories: ["action", "multiplayer", "arcade"],
+    tags: ["fps", "competitive", "tactical", "online"],
+    palette: { from: "#3b82f6", to: "#22d3ee" },
+    motif: "fps",
+    featured: true,
+    featuredBlurb: "Multiplayer. Tactical. Merciless.",
+    difficulty: 4,
+    players: "Online multiplayer",
+    released: "2026",
+    badge: "MULTIPLAYER FPS",
+    controls: [
+      "WASD — move",
+      "Mouse — aim, click — fire",
+      "Shift / Space — sprint / jump",
+      "R — reload · Esc — menu",
+    ],
+    embedHint: "unknown",
+    isNew: true,
+    year: 2026,
+  },
+
   /* ---------- ORIGINAL WOW GAMES BUILDS ---------- */
 
   {
@@ -253,6 +310,7 @@ export const GAMES: Game[] = [
       "M — mute",
     ],
     scoreLabel: "Best progress",
+    preview: { live: "geometry-rush" },
     year: 2026,
   },
   {
@@ -281,6 +339,7 @@ export const GAMES: Game[] = [
       "M — mute",
     ],
     scoreLabel: "Best score",
+    preview: { live: "flappy-chaos" },
     year: 2026,
   },
   {
@@ -325,11 +384,37 @@ export const GAMES: Game[] = [
     released: "2026",
     badge: "ORIGINAL",
     controls: ["Move pointer / drag — paint light", "1 / 2 / 3 — switch mood", "C — clear"],
+    isNew: true,
     year: 2026,
   },
 ];
 
 export const FEATURED_GAMES = GAMES.filter((g) => g.featured);
+
+/* ---------- discovery selectors (single source of truth) ---------- */
+
+export const FPS_GAMES = GAMES.filter((g) => g.motif === "fps");
+export const NEW_GAMES = GAMES.filter((g) => g.isNew);
+export const MULTIPLAYER_GAMES = GAMES.filter((g) => g.categories.includes("multiplayer"));
+export const BRAIN_GAMES = GAMES.filter(
+  (g) => g.categories.includes("puzzle") || g.categories.includes("study"),
+);
+export const SENSORY_GAMES = GAMES.filter((g) => g.categories.includes("sensory"));
+export const ARCADE_GAMES = GAMES.filter((g) => g.categories.includes("arcade"));
+
+/** hand-curated order for the discovery shelf (falls back to featured) */
+const TRENDING_ORDER = ["fps-gods", "geometry-rush", "arena-game", "brain-blast", "flappy-chaos"];
+
+export const TRENDING_GAMES = TRENDING_ORDER.map((slug) => GAMES.find((g) => g.slug === slug)).filter(
+  (g): g is Game => Boolean(g),
+);
+
+/** curated "most played" fallback; the UI prefers the visitor's real play counts */
+const POPULAR_ORDER = ["geometry-rush", "flappy-chaos", "brain-blast", "arena-game", "fps-gods"];
+
+export const POPULAR_GAMES = POPULAR_ORDER.map((slug) => GAMES.find((g) => g.slug === slug)).filter(
+  (g): g is Game => Boolean(g),
+);
 export const ORIGINAL_GAMES = GAMES.filter((g) => g.kind === "original");
 export const EXTERNAL_GAMES = GAMES.filter((g) => g.kind === "external");
 

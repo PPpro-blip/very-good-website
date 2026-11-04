@@ -78,6 +78,69 @@ function Lanterns({ c1, c2, seed }: { c1: string; c2: string; seed: number }) {
 
 function Motif({ id, c1, c2, seed }: { id: MotifId; c1: string; c2: string; seed: number }) {
   switch (id) {
+    case "fps":
+      return (
+        <g>
+          {/* tactical horizon + scanned floor */}
+          <g opacity="0.55" stroke={c1} fill="none">
+            <path d="M0 232 H480" strokeWidth="1.2" opacity="0.7" />
+            {Array.from({ length: 11 }).map((_, i) => (
+              <path
+                key={i}
+                d={`M${240 + (i - 5) * 8} 232 L${240 + (i - 5) * 62} 360`}
+                strokeWidth="0.7"
+                opacity="0.5"
+              />
+            ))}
+            {[248, 268, 296, 330].map((y, i) => (
+              <path key={y} d={`M0 ${y} H480`} strokeWidth="0.6" opacity={0.45 - i * 0.08} />
+            ))}
+          </g>
+
+          {/* angular armour plates */}
+          <g opacity="0.5">
+            <path d="M46 236 L120 168 L150 236 L96 268 Z" fill={c2} opacity="0.16" stroke={c2} strokeWidth="1" />
+            <path d="M360 246 L420 176 L452 246 L404 276 Z" fill={c1} opacity="0.14" stroke={c1} strokeWidth="1" />
+            <path d="M196 236 L240 200 L284 236" stroke={c1} strokeWidth="1.4" fill="none" opacity="0.6" />
+          </g>
+
+          {/* reticle */}
+          <g opacity="0.95">
+            <circle cx="240" cy="168" r="66" fill="none" stroke={c1} strokeWidth="1.1" opacity="0.55" />
+            <circle cx="240" cy="168" r="40" fill="none" stroke={c2} strokeWidth="1.6" opacity="0.8" />
+            <circle cx="240" cy="168" r="3.4" fill="#fff" opacity="0.95" />
+            <path d="M240 88 v34 M240 214 v34 M160 168 h34 M286 168 h34" stroke={c1} strokeWidth="1.8" strokeLinecap="round" opacity="0.85" />
+            <g stroke={c2} strokeWidth="1.4" opacity="0.7">
+              {[0, 90, 180, 270].map((deg) => (
+                <path
+                  key={deg}
+                  d="M226 -12 L240 0 L254 -12"
+                  transform={`rotate(${deg} 240 168)`}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              ))}
+            </g>
+          </g>
+
+          {/* HUD ticks + ammo strip */}
+          <g opacity="0.6">
+            {Array.from({ length: 16 }).map((_, i) => (
+              <rect key={i} x={26 + i * 11} y={30} width={i % 4 === 0 ? 5 : 2} height={i % 4 === 0 ? 12 : 7} rx="1" fill={i < 11 ? c1 : "#ffffff"} opacity={i < 11 ? 0.75 : 0.2} />
+            ))}
+            <rect x="352" y="308" width="98" height="8" rx="4" fill="#ffffff" opacity="0.12" />
+            <rect x="352" y="308" width="70" height="8" rx="4" fill={c2} opacity="0.85" />
+            <text x="352" y="298" fontFamily="JetBrains Mono, monospace" fontSize="9" letterSpacing="3" fill={c1} opacity="0.85">
+              07 / 10
+            </text>
+          </g>
+
+          {/* muzzle bloom */}
+          <circle cx="330" cy="120" r="72" fill={c2} opacity="0.08" />
+          <circle cx="330" cy="120" r="10" fill="#fff" opacity="0.16" />
+        </g>
+      );
+
     case "arena":
       return (
         <g>

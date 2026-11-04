@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Difficulty, KindBadge } from "@/components/ui/Bits";
 import { FavoriteButton } from "@/components/games/FavoriteButton";
-import { GameArt } from "@/components/games/GameArt";
+import { GamePreview } from "@/components/games/GamePreview";
 import { PLAY_ROUTE, type Game } from "@/data/games";
 import { audio } from "@/lib/audio";
 import { useFinePointer, useMotionEnabled } from "@/lib/hooks";
@@ -39,6 +39,7 @@ export function GameCard({
   const motion = useMotionEnabled();
   const state = useWowStore();
   const interactive = fine && motion;
+  const [active, setActive] = useState(false);
 
   const best = bestForGame(state, game.slug);
   const bestLabel = formatBest(game, best);
@@ -63,6 +64,7 @@ export function GameCard({
   };
 
   const handleLeave = () => {
+    setActive(false);
     const el = cabinetRef.current;
     if (!el) return;
     el.style.transform = "";
@@ -85,7 +87,10 @@ export function GameCard({
         } as React.CSSProperties
       }
       onPointerMove={handleMove}
+      onPointerEnter={() => setActive(true)}
       onPointerLeave={handleLeave}
+      onFocus={() => setActive(true)}
+      onBlur={() => setActive(false)}
       onPointerCancel={handleLeave}
     >
       <div className="cabinet-card">
@@ -97,6 +102,11 @@ export function GameCard({
         >
           <span className="flex min-w-0 items-center gap-1.5">
             <KindBadge game={game} />
+            {game.isNew ? (
+              <span className="badge-new rounded-full px-1.5 py-[1px] font-mono text-[7.5px] font-black uppercase tracking-[0.14em]">
+                New
+              </span>
+            ) : null}
             {game.badge && game.kind === "original" ? null : (
               <span className="truncate font-mono text-[8px] uppercase tracking-[0.16em] text-white/40">
                 {game.categories.slice(0, 2).map((c) => CATEGORY_LABEL[c]).join(" / ")}
@@ -117,8 +127,14 @@ export function GameCard({
             className="absolute inset-[-6%] transition-transform duration-500 ease-out"
             aria-hidden
           >
-            <GameArt game={game} />
+            <GamePreview game={game} active={active} />
           </div>
+
+          {game.featured ? (
+            <span className="cabinet-flag absolute left-2 top-2 z-[5] inline-flex items-center gap-1 rounded-full px-2 py-[3px] font-mono text-[7.5px] font-black uppercase tracking-[0.16em]">
+              <Icon name="star" size={8} /> Featured
+            </span>
+          ) : null}
 
           {/* bottom info gradient */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[4] h-1/2 bg-gradient-to-t from-[#05070f] via-[#05070f]/50 to-transparent" />
