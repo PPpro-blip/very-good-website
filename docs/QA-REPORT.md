@@ -8,6 +8,81 @@ importantly — what could **not** be verified in this environment.
 
 ---
 
+## 0. Hosted-cabinet embedding fix (2026-11-04)
+
+**Reported:** `/play/arena-game/` showed a blank grey panel with a broken-page icon
+for `https://01a18da3-cc80-7839-8353-aa68525263f2.arena.site/`.
+
+### Root cause
+
+The player mounted the hosted game's iframe immediately and treated its `load` event
+as success. When a host refuses to be framed (`X-Frame-Options: DENY/SAMEORIGIN` or
+CSP `frame-ancestors`), the browser paints an opaque grey "broken page" panel — and
+Chrome **still fires `load`**, so our loading overlay disappeared and left exactly the
+rectangle that was reported. This failure is invisible to JavaScript: a cross-origin
+frame exposes no document, so "did it really render?" cannot be answered from the page.
+
+### What could and could not be inspected from this environment
+
+| Check | Result |
+| --- | --- |
+| DNS for `…arena.site` | resolves (172.67.181.156, Cloudflare) |
+| `curl` the URL / headers | **blocked** — TLS handshake killed by the sandbox egress policy (`SSL_ERROR_SYSCALL`); `github.com` returns 200 as a control, so the tooling is fine, the host is unreachable from here |
+| GitHub Actions probe of `x-frame-options` / CSP | **not possible** — the GitHub App token cannot push `.github/workflows/*` (`workflows` permission refused) |
+| Headless browser check | **not possible** — no Chromium/Playwright in the sandbox |
+| Reproduce in a real browser | **not possible here** |
+
+So the exact header the host sends could not be read. The observed symptom (grey panel
++ broken-page icon, with our overlay gone) is the standard signature of a refused
+frame, which is why the fix does not depend on knowing the answer: it is correct
+whether or not `arena.site` allows framing. **The original URL itself was never
+modified** and was verified byte-for-byte in the exported HTML.
+
+### The fix — poster-first, opt-in frame
+
+`src/components/player/HostedStage.tsx` (new) replaces the auto-mounting iframe in
+`PlayerClient.tsx`:
+
+- **Default view = cabinet poster** (game art, host, title, prominent
+  `OPEN ARENA GAME` in a new tab, secondary `Play inside WOW GAMES`). No iframe exists
+  in the exported HTML, so a refused frame cannot appear on arrival.
+- **Loading stage** when the inline frame is requested: animated orbit rings, host
+  name, progress sweep, `OPEN ARENA GAME`, `Back to poster`.
+- **Permanent escape hatches** above the frame once mounted: `Open Arena Game` and
+  `Poster` (plus a hint pill: "Panel blank? arena.site may refuse embedding").
+- **Slow/refused state** after 12 s: explanation, `OPEN ARENA GAME`, `Try again`,
+  `Poster`. Never claims success.
+- **Restart** now reloads (or mounts) the hosted frame instead of showing a
+  "restart inside the game" toast; **fullscreen** still targets the stage element, and
+  the frame keeps `allow="fullscreen"`.
+- Four independent, always-reachable links to the original URL: chrome bar icon,
+  poster primary button, under-stage primary button, and the on-frame pill.
+
+### Tests run after the change
+
+- `npm run typecheck` — clean.
+- `npm run build` — 22 static pages exported, no warnings.
+- `npm run verify` — content checks, both engine bot runs, **and the new
+  `verify-export` suite**: all 11 player pages have a title + `<h1>`; **0 iframes in
+  the hosted exports**; the original URL appears in an anchor on every hosted page;
+  `Play inside WOW GAMES` present; original builds render no iframe; `/games` lists
+  all 11 cabinets server-side.
+- Static server smoke test: all 19 routes + `og.jpg` + `robots.txt` return 200, unknown
+  routes return 404.
+- `/play/arena-game/` HTML inspected: `OPEN ARENA GAME`, `Play inside WOW GAMES`,
+  `Hosted cabinet · …`, four `target="_blank"` links to the exact URL, **no `<iframe>`**.
+
+### Still not verified
+
+Whether `arena.site` (or the six other hosts) actually renders inside a frame. The
+only way to know is to click **Play inside WOW GAMES** in a real browser and watch the
+DevTools console — a refusal logs
+`Refused to display '…' in a frame because it set 'X-Frame-Options' to '…'`.
+If that is what you see, the poster + OPEN button is the intended, permanent path.
+
+
+---
+
 ## 1. Production build ✅
 
 ```

@@ -85,7 +85,9 @@ export const GAMES: Game[] = [
     released: "2025",
     badge: "FLAGSHIP",
     controls: ["Mouse / touch", "Keyboard"],
-    embedHint: "likely",
+    /* unverified: arena.site's framing headers could not be inspected from the
+       build sandbox. The player never assumes embedding works. */
+    embedHint: "unknown",
     year: 2025,
   },
   {

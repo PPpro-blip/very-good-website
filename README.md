@@ -138,9 +138,9 @@ scripts/                    headless verification (see §8)
 - an expandable controls/help drawer (`?` / `H`)
 - best-score panel, favourite star, play counter, "up next" rail
 - original games mount the canvas component from `src/games/registry.ts`
-- hosted games mount an iframe with a **watchdog**: `loading → loaded`, or
-  `slow` after 9 s, with a persistent **OPEN GAME** button that always links to the
-  original URL in a new tab (never a dead end).
+- hosted games show a **poster first** (see §7), mount an iframe only on request, and
+  keep a permanent **Open <game>** action on screen — never a dead end, never a blank
+  grey panel by default.
 
 Global keyboard shortcuts (search, random, mute) automatically stand down while a
 cabinet is focused (`document.body.dataset.playing === "1"`), so gameplay keys can
@@ -190,25 +190,40 @@ everything, including game music.
 
 ## 7. Hosted games and embeds
 
-Hosted cabinets load their original URL in an iframe. Whether an iframe is allowed
-is decided by **the remote server** (`X-Frame-Options` / CSP `frame-ancestors`), not
-by this site. Because that cannot be guaranteed, the player:
+Hosted cabinets live on other domains, and **whether they may be framed is decided
+by their servers** (`X-Frame-Options` / CSP `frame-ancestors`). When a host refuses,
+the browser paints an opaque grey "broken page" panel inside the iframe — and that
+refusal is **not detectable from JavaScript**: a cross-origin frame exposes no
+document, and Chrome still fires `load`. Anything that claims "the iframe loaded, so
+it worked" is guessing.
 
-1. shows a themed loading stage while the frame boots;
-2. upgrades to "slow" after 9 seconds and offers **OPEN GAME** immediately;
-3. keeps a permanent **OPEN GAME** action in the toolbar, so the cabinet is always
-   reachable even if embedding is refused.
+So the player is **poster-first** and never guesses:
+
+1. **The cabinet poster is the default view.** Game art, title, host, a prominent
+   **OPEN <GAME>** button (new tab, always works) and a secondary
+   **Play inside WOW GAMES** button. A refused frame can therefore never appear
+   unless the visitor explicitly asks for the inline frame.
+2. **Opt-in inline frame.** Clicking "Play inside WOW GAMES" mounts the iframe with a
+   loading stage (animated rings, host name, an OPEN button and "Back to poster").
+3. **Permanent escape hatches.** Once mounted, a translucent action pair stays on top
+   of the frame — **Open <game>** and **Poster** — and a hint pill appears if the
+   panel looks empty ("Panel blank? arena.site may refuse embedding"). The under-stage
+   toolbar also carries a permanent **Open <game>** button.
+4. **Slow/refused state.** If no `load` arrives within 12 s, or the frame errors, the
+   stage switches to an explanation screen with OPEN / Try again / Poster. It never
+   claims the embed succeeded.
 
 Frame permissions requested: `fullscreen; autoplay; gamepad; clipboard-write;
-encrypted-media`. No `sandbox` attribute is added, so the hosted game keeps its own
-storage, canvas and pointer-lock behaviour.
+encrypted-media; picture-in-picture`. No `sandbox` attribute is added, so the hosted
+game keeps its own storage, canvas and fullscreen behaviour. The original URL is
+never rewritten or proxied.
 
-**Honest limitation:** the seven hosted games were not re-tested from inside the
-deployed site (no browser in the build environment). What *is* verified is that the
-URLs are preserved exactly, the fallback path works, and a refused embed can never
-strand the visitor.
-
----
+**Honest limitation:** the framing headers of the seven hosts could not be inspected
+from the build environment (outbound access to them is blocked there), and there is
+no headless browser in the sandbox. What *is* verified automatically: hosted pages
+export **no iframe** in the first paint, keep the exact original URL in four
+reachable actions, and always expose the poster fallback
+(`scripts/verify-export.ts`). See `docs/QA-REPORT.md` for the full diagnosis.
 
 ## 8. Local development and verification
 
@@ -236,6 +251,11 @@ npm run verify
 - `simulate-flappy` — a synthetic pilot sweeps control parameters against the real
   engine to prove the difficulty ramp stays clearable (passes at 25+ pipes; the best
   pilot typically clears 45–80).
+- `verify-export` — reads the built `out/` folder and asserts the player contract:
+  hosted cabinets ship **no iframe in the export** (poster only), keep the exact
+  original URL, expose the inline opt-in and the OPEN button; original games render no
+  iframe; every player page has a title and an `<h1>`; `/games` lists all 11 cabinets.
+  Skipped automatically when `out/` is absent.
 
 `docs/QA-REPORT.md` records exactly what was verified, how, and what could not be
 tested in this environment.
