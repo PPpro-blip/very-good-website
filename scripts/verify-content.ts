@@ -120,6 +120,26 @@ for (let level = 0; level < 3; level++) {
 }
 
 console.log("\n▶ Game registry");
+const fps = GAMES.find((g) => g.slug === "fps-gods");
+if (!fps) fail("fps-gods is missing from the registry");
+else {
+  if (fps.url !== "https://fps-gods.vercel.app/") fail(`fps-gods URL changed: ${fps.url}`);
+  if (!fps.categories.includes("multiplayer")) fail("fps-gods must be a multiplayer cabinet");
+  if (fps.motif !== "fps") fail("fps-gods should use the dedicated fps artwork");
+  ok("FPS-GODS registered with its official URL and multiplayer identity");
+}
+const livePreviews = GAMES.filter((g) => g.preview?.live);
+for (const game of livePreviews) {
+  if (game.kind !== "original") fail(`${game.slug}: only original builds can run a live engine preview`);
+}
+const newGames = GAMES.filter((g) => g.isNew);
+if (newGames.length > 3) fail(`NEW badge is too generous (${newGames.length} games) — it must stay meaningful`);
+ok(`${livePreviews.length} live engine preview(s), ${newGames.length} cabinet(s) marked NEW`);
+for (const game of GAMES) {
+  if (game.preview?.video && !game.preview.video.startsWith("/previews/")) {
+    fail(`${game.slug}: preview.video should live under /previews/`);
+  }
+}
 for (const game of GAMES) {
   if (!game.slug || !game.title) fail(`game missing slug/title`);
   if (game.kind === "external" && !game.url) fail(`${game.slug}: external game missing url`);

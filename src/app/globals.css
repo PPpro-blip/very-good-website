@@ -681,3 +681,73 @@ html[data-motion="off"] .reveal--armed {
     opacity: 1;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * WOW GAMES 2.0 — cinematic preview + discovery utilities
+ * ------------------------------------------------------------------------- */
+@keyframes sweep {
+  0% {
+    transform: translateX(-30%) skewX(-8deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(210%) skewX(-8deg);
+    opacity: 0;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes shelfGlow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+/* horizontal discovery shelves: drag + snap, no OS scrollbar */
+.shelf {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.shelf::-webkit-scrollbar {
+  display: none;
+}
+.shelf > * {
+  scroll-snap-align: start;
+}
+.shelf[data-dragging="true"] {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+.shelf[data-dragging="true"] * {
+  pointer-events: none;
+}
+
+/* NEW / LIVE chips */
+.badge-new {
+  background: linear-gradient(120deg, #4af2a1, #2ee6ff);
+  color: #04140e;
+  box-shadow: 0 0 18px -4px rgba(74, 242, 161, 0.8);
+}
+
+/* flagship ribbon on featured cards */
+.cabinet-flag {
+  background: linear-gradient(120deg, rgba(255, 224, 102, 0.95), rgba(255, 138, 61, 0.95));
+  color: #1a0f00;
+  box-shadow: 0 6px 24px -8px rgba(255, 180, 60, 0.85);
+}

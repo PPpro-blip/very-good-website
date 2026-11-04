@@ -133,6 +133,8 @@ export interface FlappyOptions {
   initialTheme: ThemeId;
   onHud: (hud: FlappyHud) => void;
   onGameOver: (result: { score: number; newBest: boolean }) => void;
+  /** self-playing attract loop for the cinematic hover previews (silenced by caller) */
+  attract?: boolean;
 }
 
 export class FlappyEngine {
@@ -142,6 +144,7 @@ export class FlappyEngine {
   private raf = 0;
   private last = 0;
   private destroyed = false;
+  private attract: boolean;
   private viewW = 900;
   private dpr = 1;
   private resizeObserver: ResizeObserver | null = null;
@@ -186,6 +189,7 @@ export class FlappyEngine {
   };
 
   constructor(options: FlappyOptions) {
+    this.attract = options.attract === true;
     this.options = options;
     this.canvas = options.canvas;
     const ctx = this.canvas.getContext("2d");
@@ -378,11 +382,27 @@ export class FlappyEngine {
     const dt = Math.min(0.045, (now - this.last) / 1000 || 0.016);
     this.last = now;
 
+    if (this.attract && this.state === "over" && now - this.deathAt > 950) {
+      this.restart();
+    }
+    if (this.state === "running" && this.attract) this.autopilot();
     if (this.state === "running" || this.state === "dead") this.update(dt);
     this.updateParticles(dt);
     this.render(dt);
     this.emit();
   };
+
+  /** keep the bird near the middle of the next gap */
+  private autopilot() {
+    if (this.state !== "running") return;
+    const next = this.pipes
+      .filter((pipe) => pipe.x + 74 > this.bird.x - 40)
+      .sort((a, b) => a.x - b.x)[0];
+    // aim low inside the gap: a flap climbs ~85px, so this keeps the bird clear
+    // of the top pipe while the floor of the gap stays far away.
+    const target = next ? next.gapY + next.gap * 0.7 : 380;
+    if (this.bird.y > target) this.tap();
+  }
 
   private update(dt: number) {
     const spec = this.themeSpec;

@@ -145,6 +145,14 @@ export function Hero() {
               <Icon name="grid" size={15} />
               <span>Browse all games</span>
             </Link>
+            <Link
+              href={PLAY_ROUTE("fps-gods")}
+              onClick={() => audio.sfx("click")}
+              className="btn btn-ghost !px-5 !py-4 !border-arc-blue/45 !text-arc-cyan hover:!bg-arc-blue/15"
+            >
+              <Icon name="flame" size={15} />
+              <span>FPS-GODS</span>
+            </Link>
             <span className="hidden font-mono text-[9px] uppercase leading-relaxed tracking-[0.14em] text-white/30 sm:block">
               {continueGame ? (
                 <>

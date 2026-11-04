@@ -101,6 +101,12 @@ export interface GROptions {
   canvas: HTMLCanvasElement;
   onHud: (hud: GRHud) => void;
   onComplete: (result: GRResult) => void;
+  /**
+   * Attract mode: the level plays itself (used by the cinematic hover previews
+   * so cards show genuine gameplay rather than a fake animation). Silenced by
+   * the caller; deaths and level completions loop automatically.
+   */
+  attract?: boolean;
 }
 
 /** --- level authoring --------------------------------------------------- */
@@ -127,8 +133,24 @@ export function buildLevel(index: number): LevelSpec {
   const tightness = [0, 0.03, 0.07][index] ?? 0.03;
   const clearance = () => speed * (0.9 + tightness + rnd() * 0.35);
 
-  const spike = (count = 1) => {
+  /**
+   * A boost pad throws the player up to ~1.5s of horizontal travel into the air
+   * (longer while the jump is held), so the next hazard must not sit inside that
+   * landing zone — otherwise you touch down on top of a spike. This was a real,
+   * reproducible unfair death (measured: 490px airborne after a pad).
+   */
+  let landingGuard = 0;
+  const advance = () => {
     cursor += clearance();
+    if (landingGuard) {
+      cursor = Math.max(cursor, landingGuard);
+      landingGuard = 0;
+    }
+    return cursor;
+  };
+
+  const spike = (count = 1) => {
+    cursor = advance();
     for (let i = 0; i < count; i++) {
       obstacles.push({
         x: cursor + i * SPIKE_W,
@@ -141,19 +163,20 @@ export function buildLevel(index: number): LevelSpec {
     cursor += count * SPIKE_W;
   };
   const block = (h = 54) => {
-    cursor += clearance();
+    cursor = advance();
     obstacles.push({ x: cursor, y: groundY - h, w: 52, h, type: "block" });
     cursor += 52;
   };
   const saw = () => {
-    cursor += clearance();
+    cursor = advance();
     obstacles.push({ x: cursor, y: groundY - 26, w: 52, h: 52, type: "saw", spin: rnd() * 6 });
     cursor += 52;
   };
   const pad = () => {
-    cursor += clearance();
+    cursor = advance();
     obstacles.push({ x: cursor, y: groundY - 14, w: 46, h: 14, type: "pad" });
     cursor += 46;
+    landingGuard = cursor + speed * 1.5 + 110;
   };
   const coins = (count = 3, height = 118) => {
     const base = cursor + 60;
@@ -301,6 +324,7 @@ export class GeometryRushEngine {
   private player = { x: 0, y: 0, vy: 0, onGround: true, rotation: 0, holding: false };
   private lastGroundAt = 0;
   private jumpRequestedAt = -9999;
+  private attract: boolean;
   private camX = 0;
   private particles: Particle[] = [];
   private shake = 0;
@@ -348,6 +372,7 @@ export class GeometryRushEngine {
   };
 
   constructor(options: GROptions) {
+    this.attract = options.attract === true;
     this.options = options;
     this.canvas = options.canvas;
     const ctx = this.canvas.getContext("2d");
@@ -640,12 +665,40 @@ export class GeometryRushEngine {
       }
     }
     this.updateParticles(delta);
-    if (this.state === "dead" && now - this.deathAt > 780) {
+    if (this.state === "dead" && now - this.deathAt > (this.attract ? 480 : 780)) {
       this.respawn();
     }
     this.render(delta);
     this.emitHud();
   };
+
+  /** simple look-ahead pilot: jump early enough to clear the next hazard group */
+  private autopilot() {
+    const p = this.player;
+    if (this.state !== "running" || !p.onGround) return;
+    const hazardTypes = new Set(["spike", "block", "saw"]);
+    const hazards = this.level.obstacles
+      .filter((o) => hazardTypes.has(o.type) && o.x + o.w > p.x + 16)
+      .sort((a, b) => a.x - b.x);
+    const next = hazards[0];
+    if (!next) return;
+    // group touching spikes so wide clusters are cleared in one arc
+    let end = next.x + next.w;
+    for (const h of hazards) {
+      if (h.x - end < 8) end = h.x + h.w;
+      else break;
+    }
+    const distance = next.x - (p.x + PLAYER_SIZE);
+    // jump arc length for a full hold: airtime (2v/g) × speed
+    const arc = this.level.speed * ((2 * 960) / 2750);
+    const width = end - next.x;
+    // take off late enough that the landing point is past the far edge of the group
+    const trigger = Math.min(this.level.speed * 0.3, Math.max(28, arc - width - 12));
+    if (distance > 0 && distance < trigger) {
+      this.jump();
+      p.holding = true;
+    }
+  }
 
   private update(dt: number) {
     const p = this.player;
@@ -654,6 +707,8 @@ export class GeometryRushEngine {
       p.y += p.vy * dt;
       return;
     }
+
+    if (this.attract) this.autopilot();
 
     p.x += this.level.speed * dt;
     const prevBottom = p.y + PLAYER_SIZE;

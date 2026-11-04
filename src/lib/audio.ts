@@ -26,6 +26,20 @@ type SfxName =
   | "pause"
   | "chime";
 
+/* Preview silence: live gameplay previews run the real engines, and those
+ * engines talk to this singleton. While a preview is mounted we push a silence
+ * scope so the hover preview is silent without touching the visitor's own mute. */
+let silenceScopes = 0;
+export function pushAudioSilence() {
+  silenceScopes += 1;
+}
+export function popAudioSilence() {
+  silenceScopes = Math.max(0, silenceScopes - 1);
+}
+export function isAudioSilenced() {
+  return silenceScopes > 0;
+}
+
 class AudioEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -196,6 +210,7 @@ class AudioEngine {
   }
 
   sfx(name: SfxName): void {
+    if (silenceScopes > 0) return;
     if (store.get().muted) return;
     if (!this.ensure()) return;
     switch (name) {
