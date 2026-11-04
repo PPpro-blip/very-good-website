@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { Emblem } from "@/components/shell/Logo";
+import { GAMES, ORIGINAL_GAMES } from "@/data/games";
 
 const COLUMNS = [
   {
@@ -50,8 +51,9 @@ export function Footer() {
               </div>
             </div>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/55">
-              A hand-built arcade: eleven playable cabinets, four original games written from
-              scratch, and not a single placeholder card. Your world. Your games. Your arcade.
+              A hand-built arcade: {GAMES.length} playable cabinets, {ORIGINAL_GAMES.length} original
+              games written from scratch, and not a single placeholder card. Your world. Your games.
+              Your arcade.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <span className="chip">

@@ -751,3 +751,47 @@ html[data-motion="off"] .reveal--armed {
   color: #1a0f00;
   box-shadow: 0 6px 24px -8px rgba(255, 180, 60, 0.85);
 }
+
+/* mascot eyes + launch progress */
+.mascot-eye {
+  display: block;
+  height: 4px;
+  width: 4px;
+  border-radius: 9999px;
+  background: #04050c;
+}
+@keyframes launchBar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes sweep2 {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* cursor ambience layer (position fed from ArcadeProvider) */
+.cursor-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(520px circle at var(--cx, 50%) var(--cy, 40%), rgba(46, 230, 255, 0.07), transparent 62%);
+  transition: background 120ms linear;
+}
+html[data-motion="off"] .cursor-glow {
+  display: none;
+}
+@media (hover: none) {
+  /* no pointer, no cursor ambience */
+  .cursor-glow {
+    display: none;
+  }
+}

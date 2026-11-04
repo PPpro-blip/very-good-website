@@ -13,9 +13,9 @@ import { MobileDock } from "@/components/shell/MobileDock";
 import { NavBar } from "@/components/shell/NavBar";
 import { PageShell } from "@/components/shell/PageShell";
 import { ProfilePanel } from "@/components/shell/ProfilePanel";
+import { GAMES, ORIGINAL_GAMES } from "@/data/games";
 
-const SITE_DESCRIPTION =
-  "YOUR WORLD. YOUR GAMES. YOUR ARCADE. Eleven playable cabinets, four original games written from scratch, an educational Study Zone and a sensory room — all in one neon arcade.";
+const SITE_DESCRIPTION = `YOUR WORLD. YOUR GAMES. YOUR ARCADE. ${GAMES.length} playable cabinets, ${ORIGINAL_GAMES.length} original games written from scratch, an educational Study Zone and a sensory room — all in one neon arcade.`;
 
 /**
  * Netlify injects `URL` (and DEPLOY_PRIME_URL for previews) at build time. When

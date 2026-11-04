@@ -90,6 +90,48 @@ arrow-controlled rails with seven distinct sections — trending, recent, most p
 **Profile**: nickname + emoji avatar (8 choices), launch counts, favourites, best
 scores and achievements — all device-local, never presented as an online account.
 
+## 1c. WOW GAMES V3 — the interaction layer
+
+V3 is not a new page bolted onto the old one: it is a re-cut homepage plus a new
+interaction vocabulary, applied to the components that already existed.
+
+**Homepage order** (the biggest change): hero → marquee → **Quick launch** (all
+twelve cabinets, trending first, no scrolling) → featured row **and** the Top-picks
+rail side by side → FPS zone → continue row → discovery shelves → final CTA. The
+first playable cabinet used to sit three large sections down; it now sits directly
+under the hero, and the hero itself lost ~25 % of its height (smaller display type,
+tighter padding, 16:11 showcase instead of 4:3).
+
+| Piece | File | What it actually does |
+| --- | --- | --- |
+| Magnetic wrapper | `components/ui/Magnetic.tsx` | Primary CTAs drift toward the pointer (max 7–10 px), spring back on leave. Mouse + motion only. |
+| Compact tile | `components/games/GameTile.tsx` | Dense 2/3/4/6-column cabinet tile: artwork push-in, play chip, NEW/Original/Featured chips, per-game hover glow. |
+| Quick launch | `components/home/QuickLaunch.tsx` | Twelve real registry games in one grid — every tile is a live destination, nothing is invented. |
+| Top picks | `components/home/TopPicks.tsx` | Side rail: three NEW/trending picks, your favourites count, and the wheel. |
+| The wheel | `components/shell/Roulette.tsx` | "Surprise me" is now a real selection animation: artwork cycles for 1.5 s, ticks once per two frames, decelerates onto a genuine registry game, then PLAY / Spin again / Cabinet page. Escape closes, Enter plays, scroll is locked, focus lands on PLAY. Reachable from the nav dice, QuickLaunch, Top picks, the library and the final CTA. |
+| Launch curtain | `components/shell/LaunchCurtain.tsx` | 420 ms cinematic wipe (poster + title + progress bar) before `router.push`, so a launch reads as an event rather than a page flip. |
+| Route progress | `components/shell/RouteProgress.tsx` | Neon bar that starts on an internal link click and finishes when the pathname lands — no fake spinners. |
+| Cursor ambience | `components/shell/ArcadeProvider.tsx` + `.cursor-glow` | One rAF-throttled pointer listener feeds `--cx/--cy` to a fixed radial glow. Hidden on touch and under `data-motion="off"`. |
+| Bitz | `components/shell/Mascot.tsx` | Arcade keeper that appears after 11 s with one useful tip at a time (search, wheel, hover previews). Dismissal is remembered in `localStorage`; it never covers a control. |
+
+**Card upgrade** (`components/games/GameCard.tsx`): the old hover chip was a label
+inside the link. It is now a real PLAY NOW button in the accent gradient that runs
+the full launch transition, and the resting controls/best-score strip swaps for a
+quick-info panel (first two controls, players, category) while the artwork keeps
+its tilt, parallax, sheen and live preview.
+
+**Library** (`components/games/LibraryExplorer.tsx`): added **Trending** and
+**Recently added** filters (deep-linkable as `/games/?filter=trending` and
+`?filter=new`), and the library's Surprise me button now opens the wheel instead of
+teleporting to a random page.
+
+**Shortcuts**: `/` or `⌘K` search · `R` wheel · `Alt+M` mute.
+
+**Honest cost**: the quick-launch grid reuses the same procedural SVG posters as
+the shelves, so the home document grew from 658 KB to **868 KB raw / 142 KB gzip**
+(Netlify serves brotli). That is the price of showing twelve real cabinets above
+the fold; every pixel is still deterministic SVG, no image downloads.
+
 ## 2. Site map
 
 | Route | What lives there |

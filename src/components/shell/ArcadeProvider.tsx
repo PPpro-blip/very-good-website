@@ -9,7 +9,13 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
+import { Roulette } from "@/components/shell/Roulette";
+import { LaunchCurtain } from "@/components/shell/LaunchCurtain";
+import { RouteProgress } from "@/components/shell/RouteProgress";
+import { Mascot } from "@/components/shell/Mascot";
 import { audio } from "@/lib/audio";
+import { GAMES, PLAY_ROUTE, type Game } from "@/data/games";
 import { useMotionAttribute } from "@/lib/hooks";
 import { store, useWowStore } from "@/lib/store";
 
@@ -30,6 +36,12 @@ interface ArcadeContextValue {
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   toast: (title: string, detail?: string, tone?: Toast["tone"]) => void;
+  /** "Surprise me" wheel */
+  rouletteOpen: boolean;
+  openRoulette: () => void;
+  closeRoulette: () => void;
+  /** cinematic launch transition, then navigate */
+  launchGame: (slug: string) => void;
 }
 
 const ArcadeContext = createContext<ArcadeContextValue | null>(null);
@@ -45,10 +57,38 @@ export function ArcadeProvider({ children }: { children: React.ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [rouletteOpen, setRouletteOpen] = useState(false);
+  const [launching, setLaunching] = useState<Game | null>(null);
+  const router = useRouter();
   const toastId = useRef(0);
   const { muted, ambient } = useWowStore();
 
   useMotionAttribute();
+
+  /* cursor-reactive ambience: feed the pointer position to a fixed glow layer */
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    if (document.documentElement.dataset.motion === "off") return;
+    let frame = 0;
+    let x = 0.5;
+    let y = 0.4;
+    const apply = () => {
+      frame = 0;
+      document.documentElement.style.setProperty("--cx", `${(x * 100).toFixed(2)}%`);
+      document.documentElement.style.setProperty("--cy", `${(y * 100).toFixed(2)}%`);
+    };
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      x = event.clientX / window.innerWidth;
+      y = event.clientY / window.innerHeight;
+      if (!frame) frame = window.requestAnimationFrame(apply);
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   /* audio can only start after a gesture — install once, globally */
   useEffect(() => {
@@ -116,6 +156,10 @@ export function ArcadeProvider({ children }: { children: React.ReactNode }) {
       } else if (event.key === "/" && !typing && !playing && !event.metaKey && !event.ctrlKey) {
         event.preventDefault();
         setSearchOpen(true);
+      } else if (event.key.toLowerCase() === "r" && !typing && !playing && !event.metaKey && !event.ctrlKey) {
+        event.preventDefault();
+        setRouletteOpen(true);
+        audio.sfx("whoosh");
       } else if (event.key.toLowerCase() === "m" && !typing && event.altKey) {
         const next = !store.get().muted;
         store.setMuted(next);
@@ -126,6 +170,29 @@ export function ArcadeProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+
+  const openRoulette = useCallback(() => {
+    setRouletteOpen(true);
+    audio.sfx("whoosh");
+  }, []);
+  const closeRoulette = useCallback(() => setRouletteOpen(false), []);
+
+  const launchingRef = useRef(false);
+  const launchGame = useCallback(
+    (slug: string) => {
+      if (launchingRef.current) return;
+      launchingRef.current = true;
+      const game = GAMES.find((entry) => entry.slug === slug) ?? null;
+      audio.sfx("launch");
+      setLaunching(game);
+      window.setTimeout(() => router.push(PLAY_ROUTE(slug)), 420);
+      window.setTimeout(() => {
+        setLaunching(null);
+        launchingRef.current = false;
+      }, 900);
+    },
+    [router],
+  );
 
   const value = useMemo<ArcadeContextValue>(
     () => ({
@@ -138,12 +205,31 @@ export function ArcadeProvider({ children }: { children: React.ReactNode }) {
       menuOpen,
       setMenuOpen,
       toast,
+      rouletteOpen,
+      openRoulette,
+      closeRoulette,
+      launchGame,
     }),
-    [searchOpen, openSearch, closeSearch, profileOpen, openProfile, closeProfile, menuOpen, toast],
+    [
+      searchOpen,
+      openSearch,
+      closeSearch,
+      profileOpen,
+      openProfile,
+      closeProfile,
+      menuOpen,
+      openRoulette,
+      closeRoulette,
+      launchGame,
+      rouletteOpen,
+      toast,
+    ],
   );
 
   return (
     <ArcadeContext.Provider value={value}>
+      <div className="cursor-glow" aria-hidden />
+      <RouteProgress />
       {children}
       <div
         aria-live="polite"
@@ -178,6 +264,16 @@ export function ArcadeProvider({ children }: { children: React.ReactNode }) {
           </div>
         ))}
       </div>
+      <Roulette
+        open={rouletteOpen}
+        onClose={closeRoulette}
+        onPlay={(slug) => {
+          closeRoulette();
+          launchGame(slug);
+        }}
+      />
+      <LaunchCurtain game={launching} />
+      <Mascot onSearch={openSearch} onRoulette={openRoulette} />
     </ArcadeContext.Provider>
   );
 }

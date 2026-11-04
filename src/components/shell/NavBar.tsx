@@ -6,10 +6,9 @@ import { useEffect, useState } from "react";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { useArcade } from "@/components/shell/ArcadeProvider";
 import { Logo } from "@/components/shell/Logo";
-import { GAMES, PLAY_ROUTE } from "@/data/games";
 import { audio } from "@/lib/audio";
 import { store, useWowStore } from "@/lib/store";
-import { cn, pickRandom } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface NavItem {
   href: string;
@@ -30,8 +29,7 @@ const NAV: NavItem[] = [
 
 export function NavBar() {
   const pathname = usePathname() || "/";
-  const router = useRouter();
-  const { openSearch, openProfile, menuOpen, setMenuOpen } = useArcade();
+  const { openSearch, openProfile, menuOpen, setMenuOpen, openRoulette } = useArcade();
   const { muted, nickname, totalPlays, favorites } = useWowStore();
   const [scrolled, setScrolled] = useState(false);
 
@@ -62,9 +60,8 @@ export function NavBar() {
     item.exact ? pathname === "/" : pathname.startsWith(item.href);
 
   const launchRandom = () => {
-    const pick = pickRandom(GAMES);
-    audio.sfx("launch");
-    router.push(PLAY_ROUTE(pick.slug));
+    // the wheel is the selection animation — it picks a real cabinet and launches it
+    openRoulette();
   };
 
   const playerLabel = nickname?.trim() || "Guest";
