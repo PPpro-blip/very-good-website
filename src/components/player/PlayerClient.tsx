@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Difficulty, KindBadge } from "@/components/ui/Bits";
 import { FavoriteButton } from "@/components/games/FavoriteButton";
 import { GameArt } from "@/components/games/GameArt";
+import { HostedStage, type HostedStageHandle } from "@/components/player/HostedStage";
 import { useArcade } from "@/components/shell/ArcadeProvider";
 import { CATEGORY_LABEL } from "@/data/categories";
 import { GAMES, PLAY_ROUTE, type Game } from "@/data/games";
@@ -15,8 +16,6 @@ import { useFullscreen } from "@/lib/hooks";
 import { bestForGame, formatBest } from "@/lib/scores";
 import { store, useWowStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-
-type FrameStatus = "loading" | "loaded" | "slow" | "error";
 
 function hostOf(url?: string): string {
   if (!url) return "";
@@ -33,10 +32,9 @@ export function PlayerClient({ slug }: { slug: string }) {
   const { toast } = useArcade();
   const stageRef = useRef<HTMLDivElement | null>(null);
   const handleRef = useRef<CustomGameHandle | null>(null);
+  const hostedRef = useRef<HostedStageHandle | null>(null);
   const { isFullscreen, supported: fullscreenSupported, toggle: toggleFullscreen } =
     useFullscreen(stageRef);
-  const [frameStatus, setFrameStatus] = useState<FrameStatus>("loading");
-  const [frameKey, setFrameKey] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
 
   const recorded = useRef(false);
@@ -71,16 +69,6 @@ export function PlayerClient({ slug }: { slug: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  /* external frame watchdog */
-  useEffect(() => {
-    if (!game || game.kind !== "external") return;
-    setFrameStatus("loading");
-    const timer = window.setTimeout(() => {
-      setFrameStatus((current) => (current === "loading" ? "slow" : current));
-    }, 9000);
-    return () => window.clearTimeout(timer);
-  }, [game, frameKey]);
-
   if (!game) return null;
 
   const isOriginal = game.kind === "original";
@@ -95,19 +83,24 @@ export function PlayerClient({ slug }: { slug: string }) {
       (isOriginal ? g.kind === "original" || g.featured : g.categories.some((c) => game.categories.includes(c))),
   ).slice(0, 3);
 
-  const reloadFrame = () => {
-    setFrameKey((k) => k + 1);
-    setFrameStatus("loading");
-    audio.sfx("click");
-  };
-
+  /**
+   * Restart means "start this cabinet over":
+   *  - original builds expose a real restart()
+   *  - hosted builds reload their frame (and mount it if the poster is showing)
+   *    because the remote game owns its own internal restart.
+   */
   const restartGame = () => {
-    if (!handleRef.current) {
-      toast("Restart inside the game", "This hosted build controls its own restart.", "warn");
+    if (handleRef.current) {
+      handleRef.current.restart();
+      toast("Restarted", game.title, "good");
       return;
     }
-    handleRef.current.restart();
-    toast("Restarted", game.title, "good");
+    if (hostedRef.current) {
+      hostedRef.current.reload();
+      toast("Reloading cabinet", `${game.title} · ${host}`, "default");
+      return;
+    }
+    toast("Nothing to restart", "This cabinet did not mount.", "warn");
   };
 
   return (
@@ -202,9 +195,9 @@ export function PlayerClient({ slug }: { slug: string }) {
                 ) : (
                   <button
                     type="button"
-                    onClick={reloadFrame}
+                    onClick={restartGame}
                     className="icon-btn !h-8 !w-8"
-                    aria-label="Reload embedded game"
+                    aria-label="Reload the embedded game"
                     title="Reload"
                   >
                     <Icon name="rotate" size={14} />
@@ -259,77 +252,12 @@ export function PlayerClient({ slug }: { slug: string }) {
             <div className="stage-body relative h-[clamp(340px,64vh,660px)] w-full">
               {isOriginal && GameComponent ? (
                 <GameComponent ref={handleRef} />
+              ) : game.url ? (
+                <HostedStage ref={hostedRef} game={game} host={host} />
               ) : (
-                <>
-                  <iframe
-                    key={frameKey}
-                    src={game.url}
-                    title={`${game.title} — hosted game`}
-                    className="h-full w-full border-0 bg-[#04060f]"
-                    allow="fullscreen; autoplay; gamepad; clipboard-write; encrypted-media"
-                    allowFullScreen
-                    referrerPolicy="no-referrer-when-downgrade"
-                    onLoad={() => {
-                      setFrameStatus((current) => (current === "error" ? current : "loaded"));
-                    }}
-                    onError={() => setFrameStatus("error")}
-                  />
-
-                  {frameStatus === "loading" ? (
-                    <div className="absolute inset-0 z-10 grid place-items-center bg-[#05070f]">
-                      <div className="w-full max-w-xs text-center">
-                        <div className="relative mx-auto h-24 w-40 overflow-hidden rounded-xl border border-white/15">
-                          <GameArt game={game} />
-                          <span className="absolute inset-0 animate-[scan_2.2s_linear_infinite] bg-gradient-to-b from-transparent via-white/20 to-transparent" />
-                        </div>
-                        <p className="mt-4 font-mono text-[9px] uppercase tracking-[0.2em] text-arc-cyan">
-                          Connecting to {host || "host"}
-                        </p>
-                        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/10">
-                          <span className="block h-full w-1/2 animate-[ticker_1.4s_linear_infinite] rounded-full bg-gradient-to-r from-arc-cyan to-arc-violet" />
-                        </div>
-                        <p className="mt-3 text-[11px] leading-relaxed text-white/35">
-                          Hosted build — some providers block embedding. An open-directly link is
-                          always available.
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {frameStatus === "slow" || frameStatus === "error" ? (
-                    <div className="absolute inset-0 z-10 grid place-items-center bg-[#05070f]/96 p-5">
-                      <div className="w-full max-w-md text-center">
-                        <span className="chip !border-arc-orange/40 !bg-arc-orange/10 !text-arc-orange">
-                          Embedding blocked or slow
-                        </span>
-                        <p className="mt-4 font-display text-lg font-black uppercase tracking-[0.06em] text-white">
-                          This cabinet lives on {host}
-                        </p>
-                        <p className="mt-2 text-[12.5px] leading-relaxed text-white/50">
-                          {frameStatus === "error"
-                            ? "The browser could not load the embedded frame."
-                            : "No response from the embedded frame after 9 seconds. Many hosts block iframes with security headers — the game itself still works perfectly in its own tab."}
-                        </p>
-                        <div className="mt-5 flex flex-wrap justify-center gap-2">
-                          <a
-                            href={game.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-primary btn-sm"
-                          >
-                            <Icon name="external" size={13} /> Open the game
-                          </a>
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={reloadFrame}>
-                            <Icon name="rotate" size={13} /> Try again
-                          </button>
-                        </div>
-                        <p className="mt-3 break-all font-mono text-[8px] uppercase tracking-[0.1em] text-white/25">
-                          {game.url}
-                        </p>
-                      </div>
-                    </div>
-                  ) : null}
-                </>
+                <div className="grid h-full place-items-center p-6 text-center">
+                  <p className="text-sm text-white/50">This cabinet has no playable source yet.</p>
+                </div>
               )}
             </div>
           </div>
@@ -337,9 +265,25 @@ export function PlayerClient({ slug }: { slug: string }) {
           {/* under-stage toolbar */}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <button type="button" onClick={restartGame} className="btn btn-ghost btn-sm">
-                <Icon name="rotate" size={13} /> <span>Restart</span>
+              <button
+                type="button"
+                onClick={restartGame}
+                className="btn btn-ghost btn-sm"
+                title={isOriginal ? "Restart this level" : "Reload the embedded game"}
+              >
+                <Icon name="rotate" size={13} /> <span>{isOriginal ? "Restart" : "Reload"}</span>
               </button>
+              {!isOriginal && game.url ? (
+                <a
+                  href={game.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => audio.sfx("launch")}
+                  className="btn btn-primary btn-sm"
+                >
+                  <Icon name="external" size={13} /> <span>Open {game.title}</span>
+                </a>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {
