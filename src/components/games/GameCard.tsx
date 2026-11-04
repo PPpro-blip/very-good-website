@@ -1,0 +1,203 @@
+"use client";
+
+import Link from "next/link";
+import { useRef } from "react";
+import { Icon } from "@/components/ui/Icon";
+import { Difficulty, KindBadge } from "@/components/ui/Bits";
+import { FavoriteButton } from "@/components/games/FavoriteButton";
+import { GameArt } from "@/components/games/GameArt";
+import { PLAY_ROUTE, type Game } from "@/data/games";
+import { audio } from "@/lib/audio";
+import { useFinePointer, useMotionEnabled } from "@/lib/hooks";
+import { bestForGame, formatBest } from "@/lib/scores";
+import { useWowStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
+import { CATEGORY_LABEL } from "@/data/categories";
+
+/**
+ * The signature WOW GAMES card: a miniature arcade cabinet.
+ *
+ * Pointer behaviour (mouse only, motion only):
+ *  · whole cabinet tilts up to 4.5° on each axis
+ *  · artwork drifts with parallax
+ *  · a gradient border + sheen follows the cursor
+ *  · everything springs back on exit
+ * Touch devices get a clean press state instead — no jittery tilt.
+ */
+export function GameCard({
+  game,
+  className,
+  showBest = true,
+}: {
+  game: Game;
+  className?: string;
+  showBest?: boolean;
+}) {
+  const cabinetRef = useRef<HTMLElement | null>(null);
+  const artRef = useRef<HTMLDivElement | null>(null);
+  const fine = useFinePointer();
+  const motion = useMotionEnabled();
+  const state = useWowStore();
+  const interactive = fine && motion;
+
+  const best = bestForGame(state, game.slug);
+  const bestLabel = formatBest(game, best);
+
+  const handleMove = (event: React.PointerEvent) => {
+    if (!interactive) return;
+    const el = cabinetRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const py = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+    el.style.setProperty("--mx", `${px * 100}%`);
+    el.style.setProperty("--my", `${py * 100}%`);
+    el.style.transform = `perspective(1100px) rotateX(${(py - 0.5) * -4.5}deg) rotateY(${
+      (px - 0.5) * 5.5
+    }deg) translate3d(0,-4px,0)`;
+    if (artRef.current) {
+      artRef.current.style.transform = `translate3d(${(px - 0.5) * -12}px, ${
+        (py - 0.5) * -10
+      }px, 0) scale(1.07)`;
+    }
+  };
+
+  const handleLeave = () => {
+    const el = cabinetRef.current;
+    if (!el) return;
+    el.style.transform = "";
+    el.style.setProperty("--mx", "50%");
+    el.style.setProperty("--my", "0%");
+    if (artRef.current) artRef.current.style.transform = "";
+  };
+
+  const play = () => audio.sfx(game.kind === "original" ? "launch" : "click");
+
+  return (
+    <article
+      ref={cabinetRef}
+      className={cn("cabinet group/card h-full transition-transform duration-200 ease-out", className)}
+      style={
+        {
+          "--g1": game.palette.from,
+          "--g2": game.palette.to,
+          "--glow": `${game.palette.from}66`,
+        } as React.CSSProperties
+      }
+      onPointerMove={handleMove}
+      onPointerLeave={handleLeave}
+      onPointerCancel={handleLeave}
+    >
+      <div className="cabinet-card">
+        <div
+          className="marquee-strip"
+          style={{
+            background: `linear-gradient(90deg, ${game.palette.from}26, rgba(255,255,255,0.02) 60%, ${game.palette.to}1f)`,
+          }}
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <KindBadge game={game} />
+            {game.badge && game.kind === "original" ? null : (
+              <span className="truncate font-mono text-[8px] uppercase tracking-[0.16em] text-white/40">
+                {game.categories.slice(0, 2).map((c) => CATEGORY_LABEL[c]).join(" / ")}
+              </span>
+            )}
+          </span>
+          <FavoriteButton slug={game.slug} title={game.title} />
+        </div>
+
+        <Link
+          href={PLAY_ROUTE(game.slug)}
+          onClick={play}
+          className="screen scanlines vignette relative block aspect-[16/10] overflow-hidden"
+          aria-label={`Play ${game.title}`}
+        >
+          <div
+            ref={artRef}
+            className="absolute inset-[-6%] transition-transform duration-500 ease-out"
+            aria-hidden
+          >
+            <GameArt game={game} />
+          </div>
+
+          {/* bottom info gradient */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[4] h-1/2 bg-gradient-to-t from-[#05070f] via-[#05070f]/50 to-transparent" />
+
+          {/* hover / focus play affordance */}
+          <div className="absolute inset-0 z-[4] grid place-items-center opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-within/card:opacity-100">
+            <span className="flex items-center gap-2.5 rounded-full border border-white/30 bg-black/55 px-4 py-2.5 backdrop-blur-md">
+              <span
+                className="grid h-7 w-7 place-items-center rounded-full text-[#04050c]"
+                style={{ background: `linear-gradient(120deg, ${game.palette.from}, ${game.palette.to})` }}
+              >
+                <Icon name="play" size={12} />
+              </span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white">
+                Play now
+              </span>
+            </span>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-2 p-3">
+            <span className="font-mono text-[8.5px] font-semibold uppercase tracking-[0.18em] text-white/75">
+              {game.controls[0]?.split("—")[0]?.trim() || "Mouse + keys"}
+            </span>
+            {showBest && bestLabel ? (
+              <span className="flex items-center gap-1 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-arc-yellow backdrop-blur">
+                <Icon name="trophy" size={9} />
+                {bestLabel}
+              </span>
+            ) : null}
+          </div>
+        </Link>
+
+        <div className="flex flex-1 flex-col p-4">
+          <div className="flex items-start justify-between gap-2">
+            <Link
+              href={PLAY_ROUTE(game.slug)}
+              onClick={play}
+              className="font-display text-[15px] font-bold uppercase leading-tight tracking-[0.01em] text-white transition-colors group-hover/card:text-white"
+            >
+              {game.title}
+            </Link>
+            <span className="mt-1 shrink-0">
+              <Difficulty level={game.difficulty} compact />
+            </span>
+          </div>
+
+          <p className="line-2 mt-1.5 text-[12.5px] leading-relaxed text-white/50">{game.tagline}</p>
+
+          <div className="mt-3 flex flex-wrap gap-1 overflow-hidden">
+            {game.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-white/8 bg-white/[0.03] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-white/45"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+            <span className="truncate font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/30">
+              {game.players}
+            </span>
+            <Link
+              href={PLAY_ROUTE(game.slug)}
+              onClick={play}
+              className="group/btn inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-white/70 transition-all duration-300 hover:bg-white/10 hover:text-white"
+            >
+              Play
+              <Icon
+                name="arrowRight"
+                size={12}
+                className="transition-transform duration-300 group-hover/btn:translate-x-0.5"
+              />
+            </Link>
+          </div>
+        </div>
+      </div>
+      <div className="cabinet-sheen" aria-hidden />
+    </article>
+  );
+}
