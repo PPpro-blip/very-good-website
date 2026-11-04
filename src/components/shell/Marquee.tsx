@@ -10,7 +10,7 @@ export function Marquee() {
     "AURORA DRIFT · SENSORY",
     "NO DOWNLOADS",
     "LOCAL HIGH SCORES",
-    "11 CABINETS ONLINE",
+    `${GAMES.length} CABINETS ONLINE`,
   ];
 
   return (

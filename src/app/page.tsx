@@ -9,6 +9,8 @@ import { Hero } from "@/components/games/Hero";
 import { Marquee } from "@/components/shell/Marquee";
 import { ContinueRow } from "@/components/home/ContinueRow";
 import { DiscoveryShelves } from "@/components/home/DiscoveryShelves";
+import { QuickLaunch } from "@/components/home/QuickLaunch";
+import { TopPicks } from "@/components/home/TopPicks";
 import { FpsZone } from "@/components/home/FpsZone";
 import { FinalCTA, HomeStats } from "@/components/home/HomeWidgets";
 import { EXTERNAL_GAMES, GAMES, ORIGINAL_GAMES, PLAY_ROUTE } from "@/data/games";
@@ -20,7 +22,7 @@ const STRUCTURED_DATA = {
   name: "WOW GAMES",
   alternateName: "WOW GAMES — The Infinite Arcade",
   description:
-    "A futuristic neon browser arcade: eleven playable cabinets, four original canvas games, a Study Zone and a sensory room.",
+    `A futuristic neon browser arcade: ${GAMES.length} playable cabinets, ${ORIGINAL_GAMES.length} original canvas games, a Study Zone and a sensory room.`,
   inLanguage: "en",
 };
 
@@ -51,23 +53,30 @@ export default function HomePage() {
       <Hero />
       <Marquee />
 
-      <div className="shell mt-14 md:mt-20">
-        <Reveal>
-          <SectionHead
-            kicker="Featured this week"
-            title={
-              <>
-                The front of
-                <br />
-                the arcade
-              </>
-            }
-            copy="Five cabinets we keep pushing to the front of the room — swipe through them, then go play something."
-            action={{ href: "/games", label: "All games" }}
-          />
-        </Reveal>
-        <Reveal delay={80} className="mt-7">
-          <FeaturedRail />
+      <QuickLaunch />
+
+      <div className="shell mt-10 grid gap-5 md:mt-14 xl:grid-cols-[minmax(0,1fr)_314px]">
+        <div>
+          <Reveal>
+            <SectionHead
+              kicker="Featured · the front row"
+              title={
+                <>
+                  The front of
+                  <br />
+                  the arcade
+                </>
+              }
+              copy="Hover the artwork and the featured cabinet starts playing itself. Swipe the row, or take one of the picks on the right."
+              action={{ href: "/games", label: "All games" }}
+            />
+          </Reveal>
+          <Reveal delay={60} className="mt-5">
+            <FeaturedRail />
+          </Reveal>
+        </div>
+        <Reveal delay={120} className="min-w-0">
+          <TopPicks />
         </Reveal>
       </div>
 
@@ -256,5 +265,5 @@ export default function HomePage() {
 export const metadata = {
   title: "WOW GAMES — The Infinite Arcade",
   description:
-    "YOUR WORLD. YOUR GAMES. YOUR ARCADE. Eleven playable cabinets, four original games written from scratch, an educational Study Zone and a sensory room.",
+    `YOUR WORLD. YOUR GAMES. YOUR ARCADE. ${GAMES.length} playable cabinets, ${ORIGINAL_GAMES.length} original games written from scratch, an educational Study Zone and a sensory room.`,
 };

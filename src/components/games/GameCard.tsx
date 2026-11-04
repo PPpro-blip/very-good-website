@@ -6,6 +6,8 @@ import { Icon } from "@/components/ui/Icon";
 import { Difficulty, KindBadge } from "@/components/ui/Bits";
 import { FavoriteButton } from "@/components/games/FavoriteButton";
 import { GamePreview } from "@/components/games/GamePreview";
+import { Magnetic } from "@/components/ui/Magnetic";
+import { useArcade } from "@/components/shell/ArcadeProvider";
 import { PLAY_ROUTE, type Game } from "@/data/games";
 import { audio } from "@/lib/audio";
 import { useFinePointer, useMotionEnabled } from "@/lib/hooks";
@@ -38,6 +40,7 @@ export function GameCard({
   const fine = useFinePointer();
   const motion = useMotionEnabled();
   const state = useWowStore();
+  const { launchGame } = useArcade();
   const interactive = fine && motion;
   const [active, setActive] = useState(false);
 
@@ -116,11 +119,12 @@ export function GameCard({
           <FavoriteButton slug={game.slug} title={game.title} />
         </div>
 
+        <div className="relative">
         <Link
           href={PLAY_ROUTE(game.slug)}
           onClick={play}
           className="screen scanlines vignette relative block aspect-[16/10] overflow-hidden"
-          aria-label={`Play ${game.title}`}
+          aria-label={`Open ${game.title}`}
         >
           <div
             ref={artRef}
@@ -139,22 +143,8 @@ export function GameCard({
           {/* bottom info gradient */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[4] h-1/2 bg-gradient-to-t from-[#05070f] via-[#05070f]/50 to-transparent" />
 
-          {/* hover / focus play affordance */}
-          <div className="absolute inset-0 z-[4] grid place-items-center opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 group-focus-within/card:opacity-100">
-            <span className="flex items-center gap-2.5 rounded-full border border-white/30 bg-black/55 px-4 py-2.5 backdrop-blur-md">
-              <span
-                className="grid h-7 w-7 place-items-center rounded-full text-[#04050c]"
-                style={{ background: `linear-gradient(120deg, ${game.palette.from}, ${game.palette.to})` }}
-              >
-                <Icon name="play" size={12} />
-              </span>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white">
-                Play now
-              </span>
-            </span>
-          </div>
-
-          <div className="absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-2 p-3">
+          {/* resting strip: controls + personal best */}
+          <div className="absolute inset-x-0 bottom-0 z-[5] flex items-end justify-between gap-2 p-3 transition-all duration-300 group-hover/card:pointer-events-none group-hover/card:translate-y-1 group-hover/card:opacity-0 group-focus-within/card:opacity-0">
             <span className="font-mono text-[8.5px] font-semibold uppercase tracking-[0.18em] text-white/75">
               {game.controls[0]?.split("—")[0]?.trim() || "Mouse + keys"}
             </span>
@@ -165,7 +155,52 @@ export function GameCard({
               </span>
             ) : null}
           </div>
+
+          {/* hover quick-info: what it is, how it plays, who it is for */}
+          <div className="pointer-events-none absolute inset-x-2 bottom-2 z-[6] translate-y-3 rounded-xl border border-white/15 bg-[#05070f]/92 p-2.5 opacity-0 backdrop-blur-md transition-all duration-300 group-hover/card:translate-y-0 group-hover/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100">
+            <p className="font-mono text-[7.5px] uppercase tracking-[0.16em] text-white/40">Quick info</p>
+            <ul className="mt-1 space-y-0.5">
+              {game.controls.slice(0, 2).map((control) => (
+                <li key={control} className="truncate text-[10px] leading-tight text-white/70">
+                  {control}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-1.5 flex items-center gap-1.5 font-mono text-[7.5px] uppercase tracking-[0.14em] text-white/45">
+              <span>{game.players}</span>
+              <span className="h-2.5 w-px bg-white/15" />
+              <span>{CATEGORY_LABEL[game.categories[0]]}</span>
+            </div>
+          </div>
         </Link>
+
+        {/* the one control that matters — launches with the arcade transition */}
+        <div className="pointer-events-none absolute inset-0 z-[7] grid place-items-center opacity-0 transition-opacity duration-200 group-hover/card:opacity-100 group-focus-within/card:opacity-100">
+          <Magnetic strength={9} className="pointer-events-auto">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                audio.unlock();
+                launchGame(game.slug);
+              }}
+              className="group/play flex items-center gap-2 rounded-full border border-white/40 bg-black/60 py-2 pl-2 pr-4 backdrop-blur-md transition-colors duration-200 hover:border-white hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arc-cyan"
+              aria-label={`Play ${game.title} now`}
+            >
+              <span
+                className="grid h-7 w-7 place-items-center rounded-full text-[#04050c] transition-transform duration-300 group-hover/play:scale-110"
+                style={{ background: `linear-gradient(120deg, ${game.palette.from}, ${game.palette.to})` }}
+              >
+                <Icon name="play" size={12} />
+              </span>
+              <span className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                Play now
+              </span>
+            </button>
+          </Magnetic>
+        </div>
+        </div>
 
         <div className="flex flex-1 flex-col p-4">
           <div className="flex items-start justify-between gap-2">

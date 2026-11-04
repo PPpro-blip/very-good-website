@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { GameArt } from "@/components/games/GameArt";
-import { getGame, PLAY_ROUTE } from "@/data/games";
+import { getGame, GAMES, ORIGINAL_GAMES, PLAY_ROUTE } from "@/data/games";
+import { Magnetic } from "@/components/ui/Magnetic";
+import { useArcade } from "@/components/shell/ArcadeProvider";
 import { audio } from "@/lib/audio";
 import { useMotionEnabled } from "@/lib/hooks";
 import { useWowStore } from "@/lib/store";
@@ -13,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const HEADLINES = [
   "Enter the infinite arcade.",
-  "Eleven cabinets. Zero filler.",
+  `${GAMES.length} cabinets. Zero filler.`,
   "Study that feels like play.",
   "Original games, written from scratch.",
 ];
@@ -22,6 +24,7 @@ const SHOWCASE = getGame("geometry-rush")!;
 
 export function Hero() {
   const router = useRouter();
+  const { launchGame } = useArcade();
   const state = useWowStore();
   const motion = useMotionEnabled();
   const [headline, setHeadline] = useState(0);
@@ -64,7 +67,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative overflow-hidden pb-10 pt-8 sm:pt-12 lg:pb-16" aria-labelledby="hero-title">
+    <section className="relative overflow-hidden pb-6 pt-4 sm:pb-8 sm:pt-6 lg:pb-10" aria-labelledby="hero-title">
       {/* local glow */}
       <div
         aria-hidden
@@ -77,7 +80,7 @@ export function Hero() {
         style={{ background: "radial-gradient(circle, rgba(46,230,255,0.28), transparent 65%)" }}
       />
 
-      <div className="shell relative grid items-center gap-12 lg:grid-cols-[1.06fr_0.94fr] lg:gap-8">
+      <div className="shell relative grid items-center gap-8 lg:grid-cols-[1.06fr_0.94fr] lg:gap-8">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip !border-arc-cyan/30 !bg-arc-cyan/10 !text-arc-cyan">
@@ -87,14 +90,14 @@ export function Hero() {
               </span>
               Arcade online
             </span>
-            <span className="chip">11 playable cabinets</span>
+            <span className="chip">{GAMES.length} playable cabinets</span>
             <span className="chip hidden sm:inline-flex">Built by one human</span>
           </div>
 
           <h1 id="hero-title" className="mt-5">
             <span className="sr-only">WOW GAMES — your world, your games, your arcade</span>
             <span aria-hidden className="block">
-              <span className="title-hero chrome-text block text-[clamp(58px,13.5vw,132px)]">WOW</span>
+              <span className="title-hero chrome-text block text-[clamp(50px,10.5vw,112px)]">WOW</span>
               <span className="relative mt-[-0.06em] block">
                 <span className="title-hero arc-text block text-[clamp(58px,13.5vw,132px)]">
                   GAMES
@@ -124,19 +127,20 @@ export function Hero() {
             <span className="ml-0.5 inline-block h-[18px] w-[8px] animate-blink bg-arc-cyan" aria-hidden />
           </div>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                audio.unlock();
-                audio.sfx("launch");
-                router.push(PLAY_ROUTE(primary.slug));
-              }}
-              className="btn btn-primary !px-6 !py-4 text-[12px]"
-            >
-              <Icon name="play" size={15} />
-              <span>Play now</span>
-            </button>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Magnetic strength={6}>
+              <button
+                type="button"
+                onClick={() => {
+                  audio.unlock();
+                  launchGame(primary.slug);
+                }}
+                className="btn btn-primary !px-6 !py-4 text-[12px]"
+              >
+                <Icon name="play" size={15} />
+                <span>Play now</span>
+              </button>
+            </Magnetic>
             <Link
               href="/games"
               onClick={() => audio.sfx("click")}
@@ -170,10 +174,10 @@ export function Hero() {
             </span>
           </div>
 
-          <dl className="mt-8 grid max-w-lg grid-cols-3 gap-3">
+          <dl className="mt-6 grid max-w-lg grid-cols-3 gap-3">
             {[
-              { value: "11", label: "Cabinets" },
-              { value: "03", label: "Built from scratch" },
+              { value: String(GAMES.length), label: "Cabinets" },
+              { value: String(ORIGINAL_GAMES.length).padStart(2, "0"), label: "Built from scratch" },
               { value: "∞", label: "Retries" },
             ].map((stat) => (
               <div
@@ -183,7 +187,7 @@ export function Hero() {
                 <dt className="font-mono text-[8px] uppercase leading-none tracking-[0.16em] text-white/35">
                   {stat.label}
                 </dt>
-                <dd className="mt-1.5 font-display text-2xl font-black leading-none text-white">
+                <dd className="mt-1.5 font-display text-xl font-black leading-none text-white">
                   {stat.value}
                 </dd>
               </div>
@@ -192,7 +196,7 @@ export function Hero() {
         </div>
 
         {/* ---------------- hero cabinet ---------------- */}
-        <div className="relative mx-auto w-full max-w-[520px] lg:max-w-none">
+        <div className="relative mx-auto w-full max-w-[440px] lg:max-w-[520px]">
           <div
             className="pointer-events-none absolute inset-0 -z-10 rounded-[40px] opacity-70 blur-[60px]"
             style={{
@@ -241,7 +245,7 @@ export function Hero() {
               <Link
                 href={PLAY_ROUTE(SHOWCASE.slug)}
                 onClick={() => audio.sfx("launch")}
-                className="screen scanlines vignette group relative mt-2 block aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-black"
+                className="screen scanlines vignette group relative mt-2 block aspect-[16/11] overflow-hidden rounded-xl border border-white/10 bg-black"
                 aria-label="Play Geometry Rush, an original WOW GAMES build"
               >
                 <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">

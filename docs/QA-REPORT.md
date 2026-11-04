@@ -8,6 +8,41 @@ importantly — what could **not** be verified in this environment.
 
 ---
 
+## 0b. WOW GAMES V3 — the interaction revolution (2026-11-04)
+
+### Shipped
+
+| Area | What changed |
+| --- | --- |
+| Homepage | Re-cut: hero → marquee → Quick launch (12 cabinets in one grid) → featured row + Top-picks rail → FPS zone → continue row → shelves. Hero is ~25 % shorter (type clamp 50–112 px, tighter spacing, 16:11 showcase). |
+| Cards | PLAY NOW is a real magnetic button that runs the launch transition; hover swaps the controls strip for a quick-info panel; tilt, parallax, sheen and live previews unchanged. |
+| Selection | New roulette modal with a 1.5 s decelerating roll, tick audio, PLAY / Spin again / Cabinet page, Escape + Enter, scroll lock, focus handoff. Wired to the nav dice, QuickLaunch, Top picks, library and final CTA. |
+| Launch | `LaunchCurtain` wipe (420 ms) before `router.push`, guarded against double launches. |
+| Navigation | `RouteProgress` bar driven by real click → pathname events. |
+| Pointer | `Magnetic` CTA wrapper; rAF cursor-glow layer (`--cx/--cy`), disabled on touch and under `data-motion="off"`. |
+| Character | `Mascot` ("Bitz") after 11 s, one tip at a time, dismissal persisted. |
+| Library | Trending + Recently added filters (deep-linkable), Surprise me opens the wheel. |
+| Copy | Every "eleven cabinets / four originals" string now derives from the registry (`GAMES.length`, `ORIGINAL_GAMES.length`). |
+
+### Verified automatically
+
+- `npm run typecheck` — clean after every step.
+- `npm run build` — **23/23 routes**, `/` 11.8 kB page / 153 kB First Load JS.
+- `npm run verify` — content, engine simulators, preview engines and export suites all pass
+  (12 cabinets, 4 originals, 12 player pages, no iframe on hosted pages).
+- Static export served locally and curl-smoke-tested: `/`, `/games/`, `/play/fps-gods/`,
+  `/play/geometry-rush/`, `/custom/`, `/study/`, `/sensory/`, `/about/` → 200; unknown → 404.
+- Rendered home HTML contains the quick-launch block ("Jump straight in", 12 tiles),
+  the split featured section, Top picks, "Spin the wheel", the FPS zone and 55 rendered artworks, every one linking to a
+  real `/play/<slug>/` destination.
+
+### Still not verifiable here (no browser)
+
+Pointer feel of the magnetic buttons, the cursor glow's blend against the background,
+the roulette's perceived timing, hover previews rendering on screen, touch behaviour and
+any visual comparison screenshots. These are implemented and typed, but they have not
+been seen rendered in this environment.
+
 ## 0a. WOW GAMES 2.0 upgrade (2026-11-04)
 
 ### Shipped

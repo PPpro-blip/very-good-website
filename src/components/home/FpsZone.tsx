@@ -24,7 +24,7 @@ export function FpsZone() {
   if (!game) return null;
 
   return (
-    <section aria-labelledby="fps-zone-title" className="shell mt-20">
+    <section aria-labelledby="fps-zone-title" className="shell mt-12 md:mt-16">
       <div
         className="relative overflow-hidden rounded-[32px] border border-white/10"
         style={{ background: "linear-gradient(160deg,#05070d 0%,#070c18 45%,#04060c 100%)" }}

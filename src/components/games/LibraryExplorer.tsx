@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { EmptyState } from "@/components/ui/Bits";
@@ -14,18 +13,33 @@ import {
   getGame,
   searchGames,
   sortGames,
+  TRENDING_GAMES,
   type CategoryId,
   type SortId,
 } from "@/data/games";
 import { audio } from "@/lib/audio";
 import { useWowStore } from "@/lib/store";
-import { cn, pickRandom } from "@/lib/utils";
+import { useArcade } from "@/components/shell/ArcadeProvider";
+import { cn } from "@/lib/utils";
 
-type Filter = "all" | "featured" | "favorites" | "recent" | CategoryId;
+type Filter = "all" | "featured" | "trending" | "new" | "favorites" | "recent" | CategoryId;
+
+const PULSE_FILTERS: Record<string, { label: string; blurb: string; accent: string }> = {
+  trending: {
+    label: "Trending",
+    blurb: "The cabinets getting played the most this week — start here if you want the house favourites.",
+    accent: "#fbbf24",
+  },
+  new: {
+    label: "Recently added",
+    blurb: "Fresh builds and recent additions to the arcade, newest first.",
+    accent: "#34d399",
+  },
+};
 
 export function LibraryExplorer() {
-  const router = useRouter();
   const state = useWowStore();
+  const { openRoulette } = useArcade();
 
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
@@ -41,9 +55,15 @@ export function LibraryExplorer() {
     const apply = () => {
       const params = new URLSearchParams(window.location.search);
       const category = params.get("category");
-      setFilter((category as Filter) ?? "all");
+      const flag = params.get("filter");
+      if (flag === "trending" || flag === "new") {
+        setFilter(flag);
+        setOnlyFavorites(false);
+      } else {
+        setFilter((category as Filter) ?? "all");
+        setOnlyFavorites(flag === "favorites");
+      }
       setQuery(params.get("q") ?? "");
-      setOnlyFavorites(params.get("filter") === "favorites");
     };
     apply();
     window.addEventListener("popstate", apply);
@@ -53,6 +73,12 @@ export function LibraryExplorer() {
   const results = useMemo(() => {
     let list = searchGames(query);
     if (filter === "featured") list = list.filter((g) => g.featured);
+    else if (filter === "trending") {
+      const order = TRENDING_GAMES.map((g) => g.slug);
+      list = list
+        .filter((g) => order.includes(g.slug))
+        .sort((a, b) => order.indexOf(a.slug) - order.indexOf(b.slug));
+    } else if (filter === "new") list = list.filter((g) => g.isNew);
     else if (filter !== "all") list = list.filter((g) => g.categories.includes(filter as CategoryId));
     if (onlyFavorites) list = list.filter((g) => state.favorites.includes(g.slug));
     return sortGames(list, sort);
@@ -64,11 +90,11 @@ export function LibraryExplorer() {
     .slice(0, 4);
 
   const activeMeta =
-    filter === "featured"
+    PULSE_FILTERS[filter] ?? (filter === "featured"
       ? categoryMeta("featured")
       : CATEGORIES.some((c) => c.id === filter)
         ? categoryMeta(filter as CategoryId)
-        : null;
+        : null);
 
   const reset = () => {
     setFilter("all");
@@ -101,9 +127,8 @@ export function LibraryExplorer() {
             type="button"
             className="btn btn-primary"
             onClick={() => {
-              const pick = pickRandom(GAMES);
               audio.sfx("launch");
-              router.push(PLAY_ROUTE(pick.slug));
+              openRoulette();
             }}
           >
             <Icon name="dice" size={14} /> <span>Surprise me</span>
@@ -191,6 +216,20 @@ export function LibraryExplorer() {
         >
           ★ Featured
         </button>
+        {(["trending", "new"] as const).map((pulse) => (
+          <button
+            key={pulse}
+            type="button"
+            onClick={() => setFilter(pulse)}
+            data-active={filter === pulse}
+            className="chip chip-interactive shrink-0"
+          >
+            <span aria-hidden style={{ color: PULSE_FILTERS[pulse].accent }}>
+              {pulse === "trending" ? "◈" : "＋"}
+            </span>
+            {PULSE_FILTERS[pulse].label}
+          </button>
+        ))}
         {CATEGORIES.filter((c) => c.id !== "featured").map((category) => (
           <button
             key={category.id}
@@ -263,7 +302,7 @@ export function LibraryExplorer() {
             copy={
               onlyFavorites
                 ? "You haven't favourited anything with these filters yet. Tap the heart on any cabinet to save it here."
-                : "Try a different search or clear the filters — the arcade is only eleven doors deep."
+                : `Try a different search or clear the filters — the arcade is only ${GAMES.length} doors deep.`
             }
             action={{ href: "/games", label: "Show everything" }}
           />

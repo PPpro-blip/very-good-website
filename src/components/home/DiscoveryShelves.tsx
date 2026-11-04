@@ -48,7 +48,7 @@ export function DiscoveryShelves() {
   }, []);
 
   return (
-    <div className="shell mt-20 space-y-16">
+    <div className="shell mt-12 space-y-12 md:mt-16 md:space-y-14">
       <GameShelf
         id="trending"
         kicker="Trending now"

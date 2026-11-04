@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
 import { useArcade } from "@/components/shell/ArcadeProvider";
 import { GameArt } from "@/components/games/GameArt";
-import { GAMES, PLAY_ROUTE } from "@/data/games";
+import { GAMES } from "@/data/games";
+import { Magnetic } from "@/components/ui/Magnetic";
 import { ACHIEVEMENTS, earnedAchievements } from "@/lib/achievements";
 import { audio } from "@/lib/audio";
 import { useWowStore } from "@/lib/store";
-import { pickRandom } from "@/lib/utils";
 
 /** Player card summary on the homepage. Real numbers only. */
 export function HomeStats() {
@@ -88,7 +87,7 @@ export function HomeStats() {
 
 /** Big end-of-page call to action with a real random-launch button. */
 export function FinalCTA() {
-  const router = useRouter();
+  const { openRoulette } = useArcade();
   const motion = true; // purely decorative animation, handled by CSS + reduced-motion rules
   const [preview] = [GAMES[4]];
 
@@ -111,21 +110,22 @@ export function FinalCTA() {
             Ready player one?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-white/55">
-            Eleven cabinets, an original soundtrack and no excuse to stop. Let the arcade pick for
-            you.
+            {GAMES.length} cabinets, an original soundtrack and no excuse to stop. Let the arcade
+            pick for you.
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              className="btn btn-primary !px-6"
-              onClick={() => {
-                const pick = pickRandom(GAMES);
-                audio.sfx("launch");
-                router.push(PLAY_ROUTE(pick.slug));
-              }}
-            >
-              <Icon name="dice" size={15} /> <span>Launch random game</span>
-            </button>
+            <Magnetic strength={7}>
+              <button
+                type="button"
+                className="btn btn-primary !px-6"
+                onClick={() => {
+                  audio.sfx("launch");
+                  openRoulette();
+                }}
+              >
+                <Icon name="dice" size={15} /> <span>Launch random game</span>
+              </button>
+            </Magnetic>
             <Link href="/custom" className="btn btn-ghost">
               <Icon name="spark" size={15} /> <span>Play the originals</span>
             </Link>
