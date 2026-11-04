@@ -347,7 +347,10 @@ The player shell handles fullscreen, sound, restart, help and best scores for yo
   requests), fonts are self-hosted and subset, gameplay canvases render at
   devicePixelRatio-capped resolution, RAF loops are destroyed on unmount.
 - Metadata per route (title, description, Open Graph, Twitter), `robots.txt`,
-  JSON-LD on the home page.
+  JSON-LD on the home page, and a 1200×630 share card (`public/og.jpg`). Netlify's
+  `URL` build variable is picked up automatically so OG/canonical URLs are absolute
+  in production; when it is absent (local dev) the tags are simply omitted rather
+  than pointing at a placeholder domain.
 
 ---
 

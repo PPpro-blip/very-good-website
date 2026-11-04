@@ -72,6 +72,9 @@ Content assertions on the exported HTML:
 - Every `/play/<slug>/` has its own `<title>` (`Arena Game · WOW GAMES`, …), and the
   hosted cabinets contain the **exact original URL** plus a permanent "Open original"
   action.
+- A build with `URL=https://…` produces absolute `og:image` (`/og.jpg`, 1200×630,
+  54 KB) and `og:image:alt`; without the variable the tags are omitted (no
+  localhost/placeholder domain leaks into the HTML).
 - `/` contains the hero tagline, the featured rail, the four original cabinets and two
   `application/ld+json` blocks (WebSite + ItemList of all cabinets).
 - `/study/` lists Science, Geography, Logic, Vocabulary, … topics; `/sensory/` lists
@@ -123,5 +126,5 @@ so the following were reviewed by code and by static output only:
       `NODE_VERSION=22` (all in `netlify.toml`).
 - [ ] No environment variables, no functions, no secrets.
 - [ ] After deploy: repeat the smoke test on the live URLs (all 19 pages + 404).
-- [ ] Optionally add the production URL to `metadataBase` in `src/app/layout.tsx`
-      (currently omitted on purpose — there is no placeholder domain in the code).
+- [ ] Confirm `https://<site>/og.jpg` resolves and the share preview shows the WOW
+      GAMES card (Netlify supplies `URL`, so `metadataBase` fills in automatically).

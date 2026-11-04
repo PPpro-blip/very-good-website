@@ -17,7 +17,22 @@ import { ProfilePanel } from "@/components/shell/ProfilePanel";
 const SITE_DESCRIPTION =
   "YOUR WORLD. YOUR GAMES. YOUR ARCADE. Eleven playable cabinets, four original games written from scratch, an educational Study Zone and a sensory room — all in one neon arcade.";
 
+/**
+ * Netlify injects `URL` (and DEPLOY_PRIME_URL for previews) at build time. When
+ * present we get absolute canonical/OG URLs; when absent (local dev) we simply
+ * omit them instead of hard-coding a placeholder domain.
+ */
+const SITE_URL = process.env.URL ?? process.env.DEPLOY_PRIME_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+
+const OG_IMAGE = {
+  url: "/og.jpg",
+  width: 1200,
+  height: 630,
+  alt: "WOW GAMES — Your world. Your games. Your arcade.",
+};
+
 export const metadata: Metadata = {
+  ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
   title: {
     default: "WOW GAMES — The Infinite Arcade",
     template: "%s · WOW GAMES",
@@ -44,11 +59,13 @@ export const metadata: Metadata = {
     siteName: "WOW GAMES",
     title: "WOW GAMES — The Infinite Arcade",
     description: SITE_DESCRIPTION,
+    ...(SITE_URL ? { url: "/", images: [OG_IMAGE] } : {}),
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "WOW GAMES — The Infinite Arcade",
     description: SITE_DESCRIPTION,
+    ...(SITE_URL ? { images: [OG_IMAGE.url] } : {}),
   },
   formatDetection: { telephone: false, email: false, address: false },
 };

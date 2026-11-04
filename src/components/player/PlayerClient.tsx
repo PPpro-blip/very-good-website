@@ -56,6 +56,21 @@ export function PlayerClient({ slug }: { slug: string }) {
     };
   }, []);
 
+  /* ? or H opens the controls drawer (ignored while typing) */
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (event.key === "?" || event.key === "h" || event.key === "H") {
+        event.preventDefault();
+        setShowHelp((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   /* external frame watchdog */
   useEffect(() => {
     if (!game || game.kind !== "external") return;
@@ -342,11 +357,23 @@ export function PlayerClient({ slug }: { slug: string }) {
                 <Icon name="grid" size={13} /> <span>Arcade</span>
               </Link>
             </div>
-            <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/25">
-              {isOriginal
-                ? "Original build · runs fully in your browser"
-                : `Hosted externally on ${host} · original URL preserved`}
-            </p>
+            {isOriginal ? (
+              <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/25">
+                Original build · runs fully in your browser
+              </p>
+            ) : (
+              <a
+                href={game.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => audio.sfx("click")}
+                className="group inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-[8.5px] uppercase tracking-[0.12em] text-white/45 transition hover:border-arc-cyan/40 hover:text-arc-cyan"
+                title={`Open ${game.title} on ${host} in a new tab`}
+              >
+                <Icon name="external" size={11} />
+                Hosted on {host} — frame blank? Open it directly
+              </a>
+            )}
           </div>
 
           {/* help drawer */}
